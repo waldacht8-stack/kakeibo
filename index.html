@@ -52,13 +52,14 @@ body.sheet-open .app{transform:translateY(calc(env(safe-area-inset-top,0px) + 10
 
 /* month pages */
 .stage{position:relative;flex:1;min-height:0;overflow:hidden}
-.page{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px var(--gr) 10px var(--gl);will-change:transform;backface-visibility:hidden}
+.page{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px var(--gr) 8px var(--gl);will-change:transform;backface-visibility:hidden}
 .page>*{width:100%;max-width:520px;flex:none}
-.tree-head{display:flex;justify-content:space-between;align-items:flex-end;gap:8px}
+.tree-head{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;gap:8px}
 .tree-head .k{font-size:13px;color:var(--muted)}
 .tree-head .v{font-size:23px;font-weight:700;line-height:1.3}
 .chip2{font-size:13px;background:var(--sheet);padding:6px 12px;border-radius:999px;white-space:nowrap}
-.tree{flex:1 1 0;min-height:80px;position:relative}
+.tree{flex:1 1 0;min-height:80px;position:relative;margin-top:-12px}
+@media (display-mode:standalone){.app{bottom:auto;height:100vh}} /* ホーム画面アプリでは下端の黒い帯が出ないよう画面全体の高さにする */
 .tree>svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .gcard{background:var(--sheet);border-radius:22px;padding:14px 16px;display:grid;gap:7px}
 .gcard .l{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px}
@@ -107,7 +108,7 @@ body.sheet-open .app{transform:translateY(calc(env(safe-area-inset-top,0px) + 10
 .aq-rip{opacity:0;transform-box:fill-box;transform-origin:center}
 @keyframes aqWave{to{transform:translateX(150px)}}
 @keyframes aqCau{to{transform:translate(30px,6px)}}
-@keyframes aqSwim{0%{transform:translateX(-45px) scaleX(-1)}45%{transform:translateX(45px) scaleX(-1)}50%{transform:translateX(45px) scaleX(1)}95%{transform:translateX(-45px) scaleX(1)}100%{transform:translateX(-45px) scaleX(-1)}}
+@keyframes aqSwim{0%{transform:translateX(calc(var(--a,40px)*-1)) scaleX(-1)}45%{transform:translateX(var(--a,40px)) scaleX(-1)}50%{transform:translateX(var(--a,40px)) scaleX(1)}95%{transform:translateX(calc(var(--a,40px)*-1)) scaleX(1)}100%{transform:translateX(calc(var(--a,40px)*-1)) scaleX(-1)}}
 @keyframes aqTail{0%,100%{transform:skewY(-9deg)}50%{transform:skewY(9deg) scaleX(.9)}}
 @keyframes aqFin{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(16deg)}}
 @keyframes aqWeed{0%,100%{transform:skewX(-6deg)}50%{transform:skewX(6deg)}}
@@ -450,9 +451,11 @@ const man=v=>{const x=v/10000;return(x<10?r1(x):Math.round(x))+"万"};
 const MSG={keep:"水位はペースより上。ポリーはのびのび泳いでいます。",over:"今日は水が多く減った日。明日の目安で取り戻せます。",start:"予算を決めると、ポリーの水槽に水が入ります"};
 // 残り予算＝水位。点線はペース（月末に0になる配分で今日の終わりに残っているはずの額）
 function aquaSVG(k){
-    const yW=r1(226-182*k.p),yP=r1(226-182*k.pp),mud=k.p<.35,fy=r1(Math.max(yW+18,Math.min(206,(yW+226)/2)));
+    const yW=r1(226-182*k.p),yP=r1(226-182*k.pp),mud=k.p<.35,fy=r1(Math.min(204,Math.max(yW+14,(yW+226)/2)));
+    // 魚がガラスからはみ出ないよう、その深さでの水槽の幅に合わせて大きさと泳ぐ幅を決める
+    const hw=Math.sqrt(Math.max(0,100*100-(fy-124)*(fy-124)))-10,fs=r1(Math.max(.5,Math.min(1,hw*2/112))*100)/100,amp=Math.max(0,Math.round(hw-56*fs));
     const fin=[];for(let x=30;x<=78;x+=8)fin.push('M'+x+' '+(-7+x/40)+'l3 -5 l2 '+(5-x/80)+'Z');
-    return '<svg viewBox="0 0 300 240" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><defs><clipPath id="aqC"><circle cx="150" cy="124" r="100"/></clipPath>'+
+    return '<svg viewBox="18 6 264 236" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><defs><clipPath id="aqC"><circle cx="150" cy="124" r="100"/></clipPath>'+
       '<linearGradient id="aqW" x2="0" y2="1"><stop offset="0" stop-color="'+(mud?"#a7a77a":"#8fd0d6")+'" stop-opacity=".8"/><stop offset="1" stop-color="'+(mud?"#4f5a3a":"#2c7c88")+'"/></linearGradient>'+
       '<linearGradient id="aqF" x2="0" y2="1"><stop offset="0" stop-color="#55553c"/><stop offset=".5" stop-color="#8d8a62"/><stop offset="1" stop-color="#d8cf9e"/></linearGradient></defs>'+
       '<ellipse cx="150" cy="232" rx="92" ry="7" fill="#5a4630" opacity=".2"/><circle cx="150" cy="124" r="104" fill="rgba(255,255,255,.22)" stroke="rgba(90,120,120,.45)" stroke-width="2"/>'+
@@ -461,7 +464,7 @@ function aquaSVG(k){
       (mud?'':'<g class="aq-cau" opacity=".22" stroke="#fff" stroke-width="1.5" fill="none"><path d="M60 '+(yW+30)+'q20 -8 40 0t40 0t40 0"/><path d="M80 '+(yW+60)+'q20 -8 40 0t40 0"/><path d="M50 '+(yW+90)+'q20 -8 40 0t40 0t40 0t40 0"/></g>')+
       '<path d="M50 228Q100 212 150 216T252 228V240H50Z" fill="#c8b58a"/>'+[[96,212],[112,218],[190,214],[208,220],[150,222]].map(([x,y],i)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="'+(5+i%3*2)+'" ry="3.5" fill="'+["#8a7a5a","#a39274","#6f6450"][i%3]+'"/>').join("")+
       '<path class="aq-weed" d="M90 220C84 200 96 186 88 166C98 184 92 200 98 220Z" fill="#4f7a3a"/><path class="aq-weed" style="animation-delay:-1.4s" d="M206 222C200 196 214 182 204 156C218 178 210 198 214 222Z" fill="#3f6a32"/>'+
-      '<g transform="translate(102 '+fy+')"><g class="aq-swim'+(mud?" sad":"")+'">'+
+      '<g transform="translate('+r1(150-52.5*fs)+' '+fy+') scale('+fs+')"><g class="aq-swim'+(mud?" sad":"")+'" style="--a:'+r1(amp/fs)+'px">'+
         '<path class="af-tail" d="M84 -3C92 -8 100 -10 105 -7C101 -2 101 2 105 7C100 10 92 8 84 3Z" fill="#6c6a4a"/>'+
         '<path d="'+fin.join("")+'" fill="#5a583c"/>'+
         '<path d="M0 0C4 -7 14 -9 26 -8C46 -7 66 -6 85 -3L85 3C66 6 46 7 26 8C14 9 4 7 0 0Z" fill="url(#aqF)"/>'+
@@ -470,7 +473,7 @@ function aquaSVG(k){
       '<g class="aq-bub" fill="none" stroke="#fff" stroke-width="1" opacity=".8"><circle cx="196" cy="214" r="2.5"/><circle cx="200" cy="200" r="1.6"/></g>'+
       '<circle class="aq-rip" cx="150" cy="'+yW+'" r="14" fill="none" stroke="#fff" stroke-width="1.5"/>'+
       (k.cur?'<line class="pace" x1="40" x2="260" y1="'+yP+'" y2="'+yP+'"/>':'')+'</g>'+
-      (k.cur?'<text class="pace-t" x="262" y="'+(yP+4)+'">ペース</text>':'')+
+      (k.cur?'<text class="pace-t" x="246" y="'+(yP-5)+'" text-anchor="end">ペース</text>':'')+
       '<path d="M78 46A100 100 0 0 1 118 26" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none" opacity=".6"/><ellipse cx="150" cy="22" rx="56" ry="6" fill="none" stroke="rgba(90,120,120,.45)" stroke-width="2"/></svg>';
 }
 function bgHTML(){
