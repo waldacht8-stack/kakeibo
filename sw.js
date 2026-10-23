@@ -1,5 +1,5 @@
 // オフライン対応：アプリ本体をキャッシュし、通信できるときは裏で最新版に更新する
-const CACHE = "kakeibo-v1";
+const CACHE = "kakeibo-v2";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./apple-touch-icon.png", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
@@ -16,6 +16,15 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return; // API通信などは素通し
+  if (req.mode === "navigate") { // ページ本体は最新を優先し、オフライン時だけキャッシュ
+    e.respondWith(
+      fetch(req).then(res => {
+        if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put("./", copy)); }
+        return res;
+      }).catch(() => caches.match("./"))
+    );
+    return;
+  }
   e.respondWith(
     caches.match(req, { ignoreSearch: true }).then(hit => {
       const net = fetch(req).then(res => {
