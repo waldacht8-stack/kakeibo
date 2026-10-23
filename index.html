@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ポケット家計簿</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="家計簿">
+<meta name="theme-color" content="#f3f5f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111719" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>
+/* Layout: one phone column — month header, quick-entry bar with preset chips, balance ledger + budget meter, category bars, 6-month trend, dated ledger rows; bottom sheets for detail/receipt/settings */
+:root{
+  --paper:#f3f5f4; --sheet:#ffffff; --ink:#1d2a2e; --muted:#66757a; --line:#dde3e2;
+  --ai:#22446b; --ai-soft:#e3eaf3; --on-ai:#ffffff;
+  --out:#b3462f; --in:#2c7a5b; --warn:#c78a12;
+  --font:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --paper:#111719; --sheet:#1a2225; --ink:#e6ecec; --muted:#93a2a6; --line:#2b3639;
+  --ai:#8fb2de; --ai-soft:#22314a; --on-ai:#0f1a26; --out:#e3846d; --in:#6cc59d; --warn:#e5b247; color-scheme:dark}}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 110px)}
+.wrap{max-width:520px;margin:0 auto;display:grid;gap:18px}
+.num{font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--ai);outline-offset:2px}
+[hidden]{display:none!important}
+
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);padding-block:10px 6px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;max-width:520px;margin:0 auto}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.month{display:flex;align-items:center;gap:4px}
+.month h1{margin:0;font-size:19px;font-weight:700;min-width:7.2em;text-align:center}
+.iconbtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--sheet);display:grid;place-items:center;font-size:18px;line-height:1;flex:none}
+
+/* quick entry */
+.quick{display:grid;gap:8px}
+.qbar{display:flex;gap:8px;align-items:stretch}
+.qbar textarea{flex:1;min-width:0;resize:none;font:inherit;font-size:16px;line-height:1.4;color:var(--ink);background:var(--sheet);border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;height:46px;max-height:140px;overflow:auto}
+.qbar textarea:focus{border-color:var(--ai);outline:none}
+.qgo{border:0;background:var(--ai);color:var(--on-ai);border-radius:12px;padding:0 16px;font-weight:700;flex:none}
+.qgo:disabled{opacity:.4}
+.qcam{width:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--sheet);display:grid;place-items:center;flex:none}
+.qcam svg{width:22px;height:22px;stroke:var(--ai)}
+.preview{font-size:12.5px;color:var(--muted);min-height:1.3em;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.preview b{color:var(--ink);font-weight:600}
+.presets{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;margin-right:calc(-1 * max(16px,env(safe-area-inset-right,0px)))}
+.presets::-webkit-scrollbar{display:none}
+.preset{flex:none;border:1px solid var(--line);background:var(--sheet);border-radius:999px;padding:7px 12px;font-size:13.5px;display:flex;gap:6px;align-items:baseline}
+.preset .num{color:var(--muted);font-size:12px}
+.preset.add{color:var(--ai);border-style:dashed}
+
+.ledger{background:var(--sheet);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:14px}
+.bal-label{font-size:12px;color:var(--muted);letter-spacing:.08em}
+.bal{font-size:32px;font-weight:600;line-height:1.1}
+.bal.neg{color:var(--out)}
+.io{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.io div{display:grid;gap:2px}
+.io .k{font-size:12px;color:var(--muted)}
+.io .v{font-size:18px;font-weight:600}
+.io .in{color:var(--in)} .io .out{color:var(--out)}
+.meter{display:grid;gap:6px;padding-top:12px;border-top:1px dashed var(--line)}
+.meter-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px}
+.link{border:0;background:none;color:var(--ai);font-size:13px;padding:0;text-decoration:underline;text-underline-offset:3px}
+.track{height:10px;border-radius:5px;background:var(--ai-soft);overflow:hidden}
+.fill{height:100%;background:var(--ai);border-radius:5px;transition:width .4s}
+.fill.warn{background:var(--warn)} .fill.over{background:var(--out)}
+.note{font-size:12px;color:var(--muted)}
+
+section h2{font-size:12.5px;font-weight:700;letter-spacing:.1em;color:var(--muted);margin:0 0 10px}
+.cats{display:grid;gap:10px}
+.cat{display:grid;grid-template-columns:5em 1fr auto;align-items:center;gap:10px;font-size:14px}
+.cat .bar{height:8px;border-radius:4px;background:var(--ai-soft);overflow:hidden}
+.cat .bar span{display:block;height:100%;background:var(--ai);opacity:.55;border-radius:4px}
+.cat:first-child .bar span{opacity:1}
+.cat .amt{font-size:13px;min-width:6.8em;text-align:right}
+.cat .pct{color:var(--muted);font-size:11px;margin-left:4px}
+
+.trend{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:end;height:120px;border-bottom:1px solid var(--line)}
+.col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px;min-width:0}
+.col .b{width:60%;max-width:28px;background:var(--ai-soft);border-radius:4px 4px 0 0;min-height:2px}
+.col.cur .b{background:var(--ai)}
+.col .t{font-size:10px;color:var(--muted);white-space:nowrap}
+.trend-x{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;font-size:11px;color:var(--muted);text-align:center;padding-top:4px}
+.trend-x .cur{color:var(--ink);font-weight:700}
+
+.day-h{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);padding:10px 2px 6px;border-bottom:1px solid var(--line)}
+.row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:11px 2px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;width:100%}
+.row:active{background:var(--ai-soft)}
+.chip{font-size:11px;padding:3px 8px;border-radius:999px;background:var(--ai-soft);color:var(--ai);white-space:nowrap}
+.chip.inc{background:color-mix(in srgb,var(--in) 16%,transparent);color:var(--in)}
+.memo{min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.memo small{color:var(--muted)}
+.row .a{font-size:15px}
+.row .a.in{color:var(--in)}
+.empty{background:var(--sheet);border:1px dashed var(--line);border-radius:14px;padding:22px;text-align:center;color:var(--muted);font-size:14px}
+.empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
+
+.fab{position:fixed;right:max(20px,calc(env(safe-area-inset-right,0px) + 16px));bottom:calc(env(safe-area-inset-bottom,0px) + 22px);
+  width:58px;height:58px;border-radius:50%;border:0;background:var(--ai);color:var(--on-ai);font-size:30px;line-height:1;box-shadow:0 6px 18px rgba(20,40,70,.28);z-index:20}
+
+.scrim{position:fixed;inset:0;background:rgba(10,20,25,.42);z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--sheet);width:100%;max-width:560px;border-radius:18px 18px 0 0;
+  padding:16px max(18px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 18px) max(18px,env(safe-area-inset-left,0px));
+  display:grid;gap:14px;max-height:92vh;overflow:auto;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}.fill{transition:none}}
+.sheet-h{display:flex;justify-content:space-between;align-items:center}
+.sheet-h h3{margin:0;font-size:16px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--paper);border-radius:10px;padding:3px}
+.seg button{border:0;background:none;border-radius:8px;padding:9px;font-weight:700;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--sheet);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.seg button[aria-pressed="true"].o{color:var(--out)} .seg button[aria-pressed="true"].i{color:var(--in)}
+.amount{display:flex;align-items:baseline;gap:6px;border-bottom:2px solid var(--ai);padding-bottom:4px}
+.amount span{font-size:22px;color:var(--muted)}
+.amount input{border:0;background:none;color:var(--ink);font:inherit;font-variant-numeric:tabular-nums;font-size:32px;font-weight:600;width:100%;min-width:0;outline:none}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{border:1px solid var(--line);background:var(--sheet);border-radius:999px;padding:7px 13px;font-size:14px}
+.chips button[aria-pressed="true"]{background:var(--ai);color:var(--on-ai);border-color:var(--ai)}
+.field{display:grid;gap:4px;font-size:12px;color:var(--muted)}
+.field input,.field select{font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+.two{display:grid;grid-template-columns:1fr 1.4fr;gap:10px}
+.primary{border:0;background:var(--ai);color:var(--on-ai);border-radius:12px;padding:14px;font-size:16px;font-weight:700}
+.primary:disabled{opacity:.5}
+.ghost{border:1px solid var(--line);background:var(--sheet);border-radius:10px;padding:10px 14px;font-size:14px}
+.danger{border:1px solid var(--out);background:none;color:var(--out);border-radius:12px;padding:12px;font-size:14px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.btnrow>*{flex:1}
+.err{color:var(--out);font-size:13px}
+.group{display:grid;gap:10px;padding-top:14px;border-top:1px solid var(--line)}
+.group h4{margin:0;font-size:13px}
+.plist{display:grid;gap:6px}
+.pitem{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px;padding:6px 0;border-bottom:1px solid var(--line)}
+.pitem button{border:0;background:none;color:var(--out);font-size:13px}
+.shot{max-height:180px;border-radius:10px;justify-self:center;object-fit:contain}
+.spinner{width:22px;height:22px;border:3px solid var(--ai-soft);border-top-color:var(--ai);border-radius:50%;animation:spin 1s linear infinite;justify-self:center}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 94px);background:var(--ink);color:var(--paper);
+  padding:9px 8px 9px 16px;border-radius:999px;font-size:13px;z-index:40;display:flex;gap:10px;align-items:center;max-width:calc(100vw - 32px)}
+.toast button{border:0;background:none;color:var(--paper);font-weight:700;text-decoration:underline;padding:2px 8px}
+</style>
+</head>
+<body>
+
+<header>
+  <button class="iconbtn" id="settingsBtn" aria-label="設定">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+  </button>
+  <div class="month">
+    <button class="iconbtn" id="prev" aria-label="前の月">‹</button>
+    <h1 id="mlabel">—</h1>
+    <button class="iconbtn" id="next" aria-label="次の月">›</button>
+  </div>
+  <span style="width:38px"></span>
+</header>
+
+<main class="wrap">
+  <div class="quick">
+    <div class="qbar">
+      <textarea id="q" rows="1" placeholder="例：ランチ 980" enterkeyhint="done" autocomplete="off" aria-label="ひとこと入力"></textarea>
+      <button class="qcam" id="cam" aria-label="レシートを撮影">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+      </button>
+      <button class="qgo" id="qgo" disabled>記録</button>
+    </div>
+    <div class="preview" id="qprev">「メモ 金額」で記録。昨日・おととい、複数行の貼り付けにも対応。</div>
+    <div class="presets" id="presets"></div>
+  </div>
+
+  <div class="ledger">
+    <div>
+      <div class="bal-label">今月の収支</div>
+      <div class="bal num" id="bal">¥0</div>
+    </div>
+    <div class="io">
+      <div><span class="k">収入</span><span class="v num in" id="sumIn">¥0</span></div>
+      <div><span class="k">支出</span><span class="v num out" id="sumOut">¥0</span></div>
+    </div>
+    <div class="meter">
+      <div class="meter-top"><span id="budgetLabel">予算 未設定</span><button class="link" id="editBudget">予算を設定</button></div>
+      <div class="track"><div class="fill" id="fill" style="width:0"></div></div>
+      <div class="note" id="meterNote"></div>
+    </div>
+  </div>
+
+  <section>
+    <h2>カテゴリ別の支出</h2>
+    <div class="cats" id="cats"></div>
+  </section>
+
+  <section>
+    <h2>支出の推移（6か月）</h2>
+    <div class="trend" id="trend"></div>
+    <div class="trend-x" id="trendX"></div>
+  </section>
+
+  <section>
+    <h2>明細</h2>
+    <div id="list"></div>
+  </section>
+</main>
+
+<button class="fab" id="fab" aria-label="詳しく記録する">＋</button>
+<input type="file" id="photo" accept="image/*" hidden>
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+
+<div class="scrim" id="scrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" id="sheet"></div>
+</div>
+<div class="toast" id="toast" hidden><span id="toastMsg"></span><button id="toastAct" hidden></button></div>
+
+<script>
+/* ================= データ ================= */
+const CATS={
+  out:["食費","日用品","交通","住居","光熱費","通信","趣味","交際","医療","衣服","その他"],
+  in:["給与","賞与","副業","臨時収入","その他"]
+};
+const KEY="pocket-kakeibo.v1";
+const DEFAULT_PRESETS=[
+  {name:"コンビニ",amt:500,cat:"食費",type:"out"},
+  {name:"ランチ",amt:1000,cat:"食費",type:"out"},
+  {name:"電車",amt:220,cat:"交通",type:"out"},
+  {name:"カフェ",amt:450,cat:"食費",type:"out"}
+];
+let data={entries:[],budget:0,presets:DEFAULT_PRESETS.slice(),apiKey:"",model:"claude-haiku-5-5"};
+function load(){try{const o=JSON.parse(localStorage.getItem(KEY)||"null");if(o)data=Object.assign(data,o)}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){toast("保存できませんでした。ストレージの空きを確認してください")}}
+load();
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});
+
+/* ================= 便利関数 ================= */
+const $=id=>document.getElementById(id);
+const pad=n=>String(n).padStart(2,"0");
+const fmtDate=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const today=()=>fmtDate(new Date());
+const daysAgo=n=>{const d=new Date();d.setDate(d.getDate()-n);return fmtDate(d)};
+const ymOf=d=>d.slice(0,7);
+const shiftYm=(ym,k)=>{let[y,m]=ym.split("-").map(Number);m+=k;while(m<1){m+=12;y--}while(m>12){m-=12;y++}return y+"-"+pad(m)};
+const yen=n=>(n<0?"−":"")+"¥"+Math.abs(Math.round(n)).toLocaleString("ja-JP");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const wd="日月火水木金土";
+const dayLabel=d=>{if(d===today())return"今日";if(d===daysAgo(1))return"昨日";const t=new Date(d+"T00:00");return(t.getMonth()+1)+"/"+t.getDate()};
+
+let ym=ymOf(today());
+
+/* ================= ひとこと入力の解析 ================= */
+const KEYWORDS=[
+  ["in","給与",["給料","給与","月給"]],["in","賞与",["ボーナス","賞与"]],["in","副業",["副業","報酬","売上"]],
+  ["in","臨時収入",["臨時","お小遣い","こづかい","入金","返金","お祝い"]],
+  ["out","日用品",["ドラッグ","薬局","ダイソー","100均","百均","セリア","洗剤","ティッシュ","日用","ニトリ"]],
+  ["out","医療",["病院","クリニック","歯医者","歯科","処方","薬","医療","整体"]],
+  ["out","食費",["ランチ","昼","夕食","夜ご飯","晩","朝食","朝ご飯","ご飯","ごはん","スーパー","コンビニ","セブン","ファミマ","ローソン","カフェ","コーヒー","スタバ","ドトール","弁当","パン","外食","飲み物","マック","牛丼","ラーメン","寿司","ウーバー","出前","おやつ","食"]],
+  ["out","交通",["電車","バス","タクシー","ガソリン","駐車","suica","パスモ","pasmo","定期","高速","新幹線","飛行機","交通"]],
+  ["out","住居",["家賃","管理費","住宅","ローン"]],
+  ["out","光熱費",["電気","ガス","水道","光熱"]],
+  ["out","通信",["スマホ","携帯","ネット","wifi","通信","プロバイダ"]],
+  ["out","交際",["飲み会","飲み","プレゼント","ご祝儀","交際","お土産","香典"]],
+  ["out","衣服",["服","ユニクロ","gu","靴","美容院","美容室","カット","衣"]],
+  ["out","趣味",["本","映画","ゲーム","サブスク","netflix","spotify","amazon","アマゾン","漫画","ジム","趣味","ライブ"]]
+];
+function learnedMap(){ // 過去の記録：メモ → {cat,type}（新しいもの優先）
+  const m={};data.entries.slice().sort((a,b)=>(a.ts||0)-(b.ts||0)).forEach(e=>{if(e.memo)m[e.memo.toLowerCase()]={cat:e.cat,type:e.type}});return m;
+}
+function toHalf(s){return s.replace(/[０-９ａ-ｚＡ-Ｚ．，]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/　/g," ")}
+function parseLine(raw,learned){
+  let s=toHalf(raw).trim().replace(/^[+＋]\s*/,"");if(!s)return null;
+  let date=today();
+  const dw=[["おととい",2],["一昨日",2],["昨日",1],["きのう",1],["今日",0]];
+  for(const[w,n]of dw){if(s.includes(w)){date=daysAgo(n);s=s.replace(w," ");break}}
+  const md=s.match(/(\d{1,2})\/(\d{1,2})(?!\d)/);
+  if(md&&s.replace(md[0],"").match(/\d/)){ // 「10/21 ランチ 980」のように日付＋金額がある時だけ日付扱い
+    const y=new Date().getFullYear();date=y+"-"+pad(+md[1])+"-"+pad(+md[2]);s=s.replace(md[0]," ");
+  }
+  s=s.replace(/,/g,"");
+  let amt=0,hit=null;
+  let m=s.match(/(\d+(?:\.\d+)?)\s*万\s*(\d*)\s*円?/);
+  if(m){amt=Math.round(parseFloat(m[1])*10000+(m[2]?+m[2]:0));hit=m[0]}
+  else if((m=s.match(/(\d+(?:\.\d+)?)\s*(千|k|K)\s*円?/))){amt=Math.round(parseFloat(m[1])*1000);hit=m[0]}
+  else{const all=[...s.matchAll(/¥?\s*(\d+)\s*円?/g)];if(all.length){const last=all[all.length-1];amt=+last[1];hit=last[0]}}
+  if(!amt)return{error:"金額が見つかりません",raw};
+  const memo=s.replace(hit," ").replace(/\s+/g," ").trim();
+  let type="out",cat="その他";
+  const key=memo.toLowerCase();
+  if(learned[key]){({cat,type}=learned[key])}
+  else{
+    let found=false;
+    for(const[t,c,words]of KEYWORDS){if(words.some(w=>key.includes(w.toLowerCase()))){type=t;cat=c;found=true;break}}
+    if(!found){ // 部分一致で過去の記録を探す
+      const k=Object.keys(learned).find(x=>x&&(key.includes(x)||x.includes(key))&&key.length>=2);
+      if(k)({cat,type}=learned[k]);
+    }
+  }
+  if(/^[+＋]/.test(raw.trim())&&type==="out"){type="in";cat="臨時収入"}
+  return{type,amt,cat,date,memo};
+}
+function parseInput(text){
+  const learned=learnedMap();
+  return text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>parseLine(l,learned));
+}
+
+/* ================= 記録の追加・取り消し ================= */
+function addEntries(list,label){
+  const recs=list.map(p=>({id:newId(),type:p.type,amt:p.amt,cat:p.cat,date:p.date,memo:p.memo||"",ts:Date.now()}));
+  data.entries.push(...recs);save();
+  const last=recs[recs.length-1];ym=ymOf(last.date);render();
+  toast(label||(recs.length>1?recs.length+"件を記録しました":(last.type==="in"?"収入 ":"")+(last.memo||last.cat)+" "+yen(last.amt)+" を記録"),"取り消す",()=>{
+    const ids=new Set(recs.map(r=>r.id));data.entries=data.entries.filter(e=>!ids.has(e.id));save();render();toast("取り消しました");
+  });
+}
+
+/* ================= 画面描画 ================= */
+function monthEntries(m){return data.entries.filter(e=>ymOf(e.date)===m)}
+function totals(m){let i=0,o=0;monthEntries(m).forEach(e=>e.type==="in"?i+=e.amt:o+=e.amt);return{i,o}}
+
+function renderPresets(){
+  $("presets").innerHTML=data.presets.map((p,i)=>'<button class="preset" data-i="'+i+'">'+esc(p.name)+'<span class="num">'+yen(p.amt)+'</span></button>').join("")+
+    '<button class="preset add" id="addPreset">＋ 定番</button>';
+}
+function render(){
+  const[y,m]=ym.split("-");
+  $("mlabel").textContent=y+"年"+Number(m)+"月";
+  const{i,o}=totals(ym);
+  $("sumIn").textContent=yen(i);$("sumOut").textContent=yen(o);
+  const bal=i-o;$("bal").textContent=(bal>0?"+":"")+yen(bal);$("bal").classList.toggle("neg",bal<0);
+
+  const B=data.budget,fill=$("fill");
+  if(B>0){
+    const p=o/B,now=today(),cur=ymOf(now)===ym,dim=new Date(+y,+m,0).getDate(),left=B-o;
+    $("budgetLabel").innerHTML='予算 <span class="num">'+yen(B)+'</span> のうち <span class="num">'+Math.round(p*100)+'%</span>';
+    $("editBudget").textContent="変更";
+    fill.style.width=Math.min(100,p*100)+"%";fill.className="fill"+(p>1?" over":p>.8?" warn":"");
+    let note=left>=0?"残り "+yen(left):yen(-left)+" 予算オーバー";
+    if(cur&&left>0){const rest=dim-Number(now.slice(8))+1;note+="・1日あたり "+yen(left/rest)+"（残り"+rest+"日）"}
+    $("meterNote").textContent=note;
+  }else{
+    $("budgetLabel").textContent="予算 未設定";$("editBudget").textContent="予算を設定";
+    fill.style.width="0";fill.className="fill";$("meterNote").textContent="月の予算を決めると、使った割合と1日あたりの残りが出ます。";
+  }
+
+  const byCat={};monthEntries(ym).filter(e=>e.type==="out").forEach(e=>byCat[e.cat]=(byCat[e.cat]||0)+e.amt);
+  const rows=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  $("cats").innerHTML=rows.length?rows.map(([c,v])=>{const pct=o?v/o*100:0;
+    return '<div class="cat"><span>'+esc(c)+'</span><div class="bar"><span style="width:'+pct.toFixed(1)+'%"></span></div><span class="amt num">'+yen(v)+'<span class="pct">'+Math.round(pct)+'%</span></span></div>'}).join("")
+    :'<div class="note">この月の支出はまだありません。</div>';
+
+  const ms=[];for(let k=5;k>=0;k--)ms.push(shiftYm(ym,-k));
+  const vals=ms.map(x=>totals(x).o),mx=Math.max(...vals,1);
+  $("trend").innerHTML=ms.map((x,idx)=>'<div class="col'+(x===ym?" cur":"")+'"><span class="t num">'+(vals[idx]?(vals[idx]>=10000?(vals[idx]/10000).toFixed(1)+"万":vals[idx].toLocaleString()):"")+'</span><div class="b" style="height:'+(vals[idx]/mx*78).toFixed(1)+'%"></div></div>').join("");
+  $("trendX").innerHTML=ms.map(x=>'<span class="'+(x===ym?"cur":"")+'">'+Number(x.slice(5))+'月</span>').join("");
+
+  const list=monthEntries(ym).sort((a,b)=>b.date.localeCompare(a.date)||(b.ts||0)-(a.ts||0));
+  if(!list.length){$("list").innerHTML='<div class="empty"><b>まだ記録がありません</b>上の欄に「ランチ 980」と入れるか、定番ボタンをタップしてみましょう。</div>'}
+  else{
+    const groups={};list.forEach(e=>(groups[e.date]=groups[e.date]||[]).push(e));
+    $("list").innerHTML=Object.entries(groups).map(([d,es])=>{
+      const dt=new Date(d+"T00:00"),dayOut=es.filter(e=>e.type==="out").reduce((s,e)=>s+e.amt,0);
+      return '<div><div class="day-h"><span>'+(dt.getMonth()+1)+"/"+dt.getDate()+"（"+wd[dt.getDay()]+'）</span><span class="num">'+(dayOut?"支出 "+yen(dayOut):"")+'</span></div>'+
+        es.map(e=>'<button class="row" data-id="'+e.id+'"><span class="chip'+(e.type==="in"?" inc":"")+'">'+esc(e.cat)+'</span><span class="memo">'+(e.memo?esc(e.memo):'<small>メモなし</small>')+'</span><span class="a num'+(e.type==="in"?" in":"")+'">'+(e.type==="in"?"+":"")+yen(e.amt)+'</span></button>').join("")+'</div>';
+    }).join("");
+  }
+  renderPresets();
+}
+
+/* ================= ひとこと入力 UI ================= */
+const q=$("q");
+function autoGrow(){q.style.height="46px";q.style.height=Math.min(140,q.scrollHeight+3)+"px"}
+function updatePreview(){
+  autoGrow();
+  const parsed=parseInput(q.value);
+  const ok=parsed.filter(p=>p&&!p.error);
+  $("qgo").disabled=!ok.length;
+  if(!q.value.trim()){$("qprev").textContent="「メモ 金額」で記録。昨日・おととい、複数行の貼り付けにも対応。";return}
+  if(parsed.length===1){
+    const p=parsed[0];
+    $("qprev").innerHTML=p.error?'<span class="err">'+p.error+'</span>':
+      '<b>'+(p.type==="in"?"収入":"支出")+'</b>・<b>'+esc(p.cat)+'</b>・<b class="num">'+yen(p.amt)+'</b>・'+dayLabel(p.date)+(p.memo?'・'+esc(p.memo):'');
+  }else{
+    const bad=parsed.length-ok.length;
+    $("qprev").innerHTML='<b>'+ok.length+'件</b>・合計 <b class="num">'+yen(ok.reduce((s,p)=>s+(p.type==="in"?0:p.amt),0))+'</b>'+(bad?' <span class="err">（金額のない'+bad+'行は記録しません）</span>':'');
+  }
+}
+q.addEventListener("input",updatePreview);
+q.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();submitQuick()}});
+$("qgo").onclick=submitQuick;
+function submitQuick(){
+  const ok=parseInput(q.value).filter(p=>p&&!p.error);if(!ok.length)return;
+  addEntries(ok);q.value="";updatePreview();q.blur();
+}
+
+$("presets").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.id==="addPreset"){openPresetForm();return}
+  const p=data.presets[+b.dataset.i];if(p)addEntries([{type:p.type||"out",amt:p.amt,cat:p.cat,date:today(),memo:p.name}]);
+});
+
+/* ================= シート共通 ================= */
+const sheet=$("sheet");
+function openSheet(html){sheet.innerHTML=html;$("scrim").hidden=false}
+function closeSheet(){$("scrim").hidden=true;draft=null;receiptAbort&&receiptAbort.abort()}
+$("scrim").addEventListener("click",e=>{if(e.target===$("scrim"))closeSheet()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("scrim").hidden)closeSheet()});
+const head=t=>'<div class="sheet-h"><h3>'+t+'</h3><button class="iconbtn" data-act="close" aria-label="閉じる">×</button></div>';
+
+/* ---- 詳細入力・編集 ---- */
+let draft=null,confirmDel=false;
+function openEntry(entry,prefill){
+  draft=entry?{...entry,_orig:entry}:Object.assign({type:"out",amt:"",cat:"食費",date:ymOf(today())===ym?today():ym+"-01",memo:""},prefill||{});
+  confirmDel=false;drawEntry();
+}
+function drawEntry(extraTop){
+  const d=draft,cats=CATS[d.type];if(!cats.includes(d.cat))d.cat=cats[cats.length-1];
+  openSheet(head(d._orig?"記録を編集":d._receipt?"レシートの読み取り結果":"記録する")+(extraTop||"")+
+   '<div class="seg"><button class="o" data-type="out" aria-pressed="'+(d.type==="out")+'">支出</button><button class="i" data-type="in" aria-pressed="'+(d.type==="in")+'">収入</button></div>'+
+   '<label class="amount"><span>¥</span><input id="amt" inputmode="numeric" pattern="[0-9]*" placeholder="0" value="'+(d.amt||"")+'" aria-label="金額"></label>'+
+   '<div class="chips">'+cats.map(c=>'<button data-cat="'+c+'" aria-pressed="'+(c===d.cat)+'">'+c+'</button>').join("")+'</div>'+
+   '<div class="two"><label class="field">日付<input type="date" id="date" value="'+d.date+'"></label><label class="field">メモ<input id="memo" placeholder="例：スーパー" value="'+esc(d.memo||"")+'" maxlength="60" list="memos"></label></div>'+
+   '<datalist id="memos">'+[...new Set(data.entries.map(e=>e.memo).filter(Boolean))].slice(-60).map(m=>'<option value="'+esc(m)+'">').join("")+'</datalist>'+
+   '<div class="err" id="err"></div>'+
+   '<button class="primary" data-act="saveEntry">'+(d._orig?"更新する":"記録する")+'</button>'+
+   (d._orig?'<div class="btnrow"><button class="ghost" data-act="toPreset">定番に登録</button>'+(confirmDel?'<button class="danger" data-act="delYes">本当に削除</button><button class="ghost" data-act="delNo">やめる</button>':'<button class="danger" data-act="del">削除</button>')+'</div>':''));
+}
+function readEntry(){if(!$("amt"))return;draft.amt=$("amt").value;draft.date=$("date").value;draft.memo=$("memo").value.trim()}
+function commitEntry(){
+  readEntry();
+  const amt=parseInt(String(draft.amt).replace(/[^\d]/g,""),10);
+  if(!amt){$("err").textContent="金額を入力してください";return}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(draft.date)){$("err").textContent="日付を選んでください";return}
+  if(draft._orig){
+    Object.assign(data.entries.find(e=>e.id===draft._orig.id)||{},{type:draft.type,amt,cat:draft.cat,date:draft.date,memo:draft.memo});
+    save();ym=ymOf(draft.date);closeSheet();render();toast("更新しました");
+  }else{
+    const p={type:draft.type,amt,cat:draft.cat,date:draft.date,memo:draft.memo};closeSheet();addEntries([p]);
+  }
+}
+
+/* ---- 予算 ---- */
+function openBudget(){
+  openSheet(head("月の予算")+'<div class="note">1か月に使う上限です。0にすると予算表示を消します。</div>'+
+   '<label class="amount"><span>¥</span><input id="bud" inputmode="numeric" pattern="[0-9]*" placeholder="150000" value="'+(data.budget||"")+'" aria-label="予算額"></label>'+
+   '<button class="primary" data-act="saveBudget">保存する</button>');
+}
+
+/* ---- 定番 ---- */
+function openPresetForm(from){
+  const p=from||{name:"",amt:"",cat:"食費",type:"out"};
+  openSheet(head("定番ボタンを追加")+'<div class="note">よく使う支出を登録すると、ボタン1つで今日の記録になります。</div>'+
+   '<div class="two"><label class="field">名前<input id="pName" value="'+esc(p.name)+'" placeholder="例：コンビニ" maxlength="20"></label><label class="field">金額<input id="pAmt" inputmode="numeric" value="'+(p.amt||"")+'" placeholder="500"></label></div>'+
+   '<label class="field">カテゴリ<select id="pCat">'+CATS.out.concat(CATS.in.map(c=>"収入:"+c)).map(c=>{const v=c.startsWith("収入:")?c:c;const sel=(p.type==="in"?"収入:"+p.cat:p.cat)===c;return'<option'+(sel?" selected":"")+'>'+c+'</option>'}).join("")+'</select></label>'+
+   '<div class="err" id="err"></div><button class="primary" data-act="savePreset">追加する</button>');
+}
+function commitPreset(){
+  const name=$("pName").value.trim(),amt=parseInt($("pAmt").value.replace(/[^\d]/g,""),10),c=$("pCat").value;
+  if(!name||!amt){$("err").textContent="名前と金額を入れてください";return}
+  const inc=c.startsWith("収入:");
+  data.presets.push({name,amt,cat:inc?c.slice(3):c,type:inc?"in":"out"});save();closeSheet();render();toast("定番に「"+name+"」を追加しました");
+}
+
+/* ---- 設定 ---- */
+let confirmReset=false;
+function openSettings(){
+  openSheet(head("設定")+
+   '<div class="group" style="border:0;padding-top:0"><h4>定番ボタン</h4><div class="plist">'+
+     (data.presets.length?data.presets.map((p,i)=>'<div class="pitem"><span>'+esc(p.name)+'　<span class="num note">'+yen(p.amt)+'・'+esc(p.cat)+'</span></span><button data-act="delPreset" data-i="'+i+'">削除</button></div>').join(""):'<div class="note">まだありません</div>')+
+   '</div><button class="ghost" data-act="newPreset">＋ 定番を追加</button></div>'+
+   '<div class="group"><h4>レシート読み取り（Claude）</h4>'+
+     '<div class="note">Anthropic APIキーを入れると、カメラボタンからレシートを撮影して自動入力できます。キーはこのiPhoneの中だけに保存され、写真はAnthropicにのみ送られます。</div>'+
+     '<label class="field">APIキー<input id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-…" value="'+esc(data.apiKey||"")+'"></label>'+
+     '<label class="field">読み取りモデル<select id="model"><option value="claude-haiku-5-5"'+(data.model==="claude-haiku-5-5"?" selected":"")+'>Haiku（速い・安い）</option><option value="claude-sonnet-5-5"'+(data.model==="claude-sonnet-5-5"?" selected":"")+'>Sonnet（精度重視）</option></select></label>'+
+     '<button class="ghost" data-act="saveKey">保存</button></div>'+
+   '<div class="group"><h4>バックアップ</h4><div class="note">記録はこのiPhoneの中だけにあります。機種変更やデータ消失に備えて、ときどき書き出してください。</div>'+
+     '<div class="btnrow"><button class="ghost" data-act="export">書き出す（JSON）</button><button class="ghost" data-act="import">読み込む</button></div>'+
+     '<button class="ghost" data-act="csv">'+ym.replace("-","年")+'月をCSVで書き出す</button></div>'+
+   '<div class="group"><h4>リセット</h4>'+(confirmReset?'<div class="btnrow"><button class="danger" data-act="resetYes">すべての記録を消す</button><button class="ghost" data-act="resetNo">やめる</button></div>':'<button class="danger" data-act="reset">すべての記録を消す…</button>')+'</div>'+
+   '<div class="note">記録 '+data.entries.length+'件</div>');
+}
+
+/* ---- ファイル書き出し（iPhoneでは共有シートから「ファイルに保存」） ---- */
+async function shareFile(name,text,type){
+  const file=new File([text],name,{type});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file]});return}catch(e){if(e.name==="AbortError")return}}
+  const a=document.createElement("a");a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+}
+function exportJSON(){shareFile("kakeibo-backup-"+today()+".json",JSON.stringify({app:"pocket-kakeibo",version:1,entries:data.entries,budget:data.budget,presets:data.presets},null,1),"application/json")}
+function exportCSV(){
+  const rows=[["日付","区分","カテゴリ","金額","メモ"]].concat(monthEntries(ym).sort((a,b)=>a.date.localeCompare(b.date)).map(e=>[e.date,e.type==="in"?"収入":"支出",e.cat,e.amt,e.memo||""]));
+  shareFile("kakeibo-"+ym+".csv","﻿"+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\r\n"),"text/csv");
+}
+$("importFile").addEventListener("change",async e=>{
+  const f=e.target.files[0];e.target.value="";if(!f)return;
+  try{
+    const o=JSON.parse(await f.text());if(!Array.isArray(o.entries))throw 0;
+    const have=new Set(data.entries.map(x=>x.id));let n=0;
+    o.entries.forEach(x=>{if(x&&x.id&&!have.has(x.id)&&x.amt&&x.date){data.entries.push(x);n++}});
+    if(o.presets&&!data.presets.length)data.presets=o.presets;
+    if(o.budget&&!data.budget)data.budget=o.budget;
+    save();closeSheet();render();toast(n+"件を読み込みました");
+  }catch(err){toast("読み込めませんでした。このアプリで書き出したJSONファイルを選んでください")}
+});
+
+/* ================= レシート読み取り ================= */
+let receiptAbort=null;
+$("cam").onclick=()=>{
+  if(!data.apiKey){openSettings();toast("先にAPIキーを設定してください");return}
+  $("photo").click();
+};
+$("photo").addEventListener("change",async e=>{
+  const f=e.target.files[0];e.target.value="";if(!f)return;
+  let img;try{img=await shrink(f)}catch(err){toast("画像を開けませんでした");return}
+  openSheet(head("レシートを読み取り中")+'<img class="shot" src="'+img.url+'" alt="撮影したレシート"><div class="spinner" role="status" aria-label="読み取り中"></div><div class="note" style="text-align:center">Claudeが金額・日付・お店を読んでいます…</div>');
+  try{
+    const r=await readReceipt(img.b64);
+    draft={type:r.type==="in"?"in":"out",amt:r.total||"",cat:r.category||"その他",date:/^\d{4}-\d{2}-\d{2}$/.test(r.date||"")?r.date:today(),memo:(r.store||"").slice(0,60),_receipt:true};
+    if(!CATS[draft.type].includes(draft.cat))draft.cat="その他";
+    confirmDel=false;
+    drawEntry('<img class="shot" src="'+img.url+'" alt="撮影したレシート"><div class="note">内容を確認して、違うところだけ直してから記録してください。</div>');
+  }catch(err){
+    if(err.name==="AbortError")return;
+    openSheet(head("読み取れませんでした")+'<div class="err">'+esc(err.message||"通信に失敗しました")+'</div><div class="btnrow"><button class="ghost" data-act="retakePhoto">撮り直す</button><button class="ghost" data-act="manual">手で入力</button></div>');
+  }
+});
+function shrink(file){
+  return new Promise((res,rej)=>{
+    const u=URL.createObjectURL(file),im=new Image();
+    im.onload=()=>{
+      const max=1400,s=Math.min(1,max/Math.max(im.width,im.height));
+      const c=document.createElement("canvas");c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
+      c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+      const url=c.toDataURL("image/jpeg",.82);URL.revokeObjectURL(u);res({url,b64:url.split(",")[1]});
+    };
+    im.onerror=rej;im.src=u;
+  });
+}
+async function readReceipt(b64){
+  receiptAbort=new AbortController();
+  const prompt="この画像は日本のレシート（または領収書・明細）です。読み取って、次の形のJSONだけを返してください。説明文は不要です。\n"+
+    '{"date":"YYYY-MM-DD または null","store":"店名（短く）","total":支払い合計の整数,"category":"カテゴリ","type":"out"}\n'+
+    "categoryは次から1つ：「"+CATS.out.join("・")+"」。total は税込の支払い合計（お釣りや預かり金ではない）。今日は"+today()+"です。年が読めない場合は今日に近い日付にしてください。レシートでない画像なら {\"error\":\"理由\"} を返してください。";
+  let res;
+  try{
+    res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal:receiptAbort.signal,
+      headers:{"content-type":"application/json","x-api-key":data.apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:data.model||"claude-haiku-5-5",max_tokens:300,messages:[{role:"user",content:[
+        {type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},{type:"text",text:prompt}]}]})});
+  }catch(e){if(e.name==="AbortError")throw e;throw new Error("通信できませんでした。電波の届く場所でもう一度試してください。")}
+  if(!res.ok){
+    const msg=res.status===401?"APIキーが正しくありません。設定から入れ直してください。":res.status===429?"短時間に使いすぎました。少し待ってから試してください。":res.status===400?"リクエストが受け付けられませんでした。モデルの選択を変えて試してください。":"Claudeから応答がありませんでした（"+res.status+"）。";
+    throw new Error(msg);
+  }
+  const j=await res.json();
+  const text=(j.content||[]).map(c=>c.text||"").join("");
+  const m=text.match(/\{[\s\S]*\}/);if(!m)throw new Error("読み取り結果を解釈できませんでした。明るい場所で撮り直してみてください。");
+  const o=JSON.parse(m[0]);if(o.error)throw new Error("レシートとして読めませんでした："+o.error);
+  o.total=Math.round(Number(String(o.total).replace(/[^\d.]/g,"")))||0;
+  return o;
+}
+
+/* ================= シート内の操作 ================= */
+sheet.addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.type){readEntry();draft.type=t.dataset.type;redrawEntry();return}
+  if(t.dataset.cat){readEntry();draft.cat=t.dataset.cat;redrawEntry();return}
+  const a=t.dataset.act;
+  switch(a){
+    case"close":closeSheet();break;
+    case"saveEntry":commitEntry();break;
+    case"del":readEntry();confirmDel=true;drawEntry();break;
+    case"delNo":readEntry();confirmDel=false;drawEntry();break;
+    case"delYes":{const id=draft._orig.id;data.entries=data.entries.filter(x=>x.id!==id);save();closeSheet();render();toast("削除しました");break}
+    case"toPreset":readEntry();openPresetForm({name:draft.memo||draft.cat,amt:parseInt(draft.amt,10)||"",cat:draft.cat,type:draft.type});break;
+    case"saveBudget":data.budget=parseInt(($("bud").value||"0").replace(/[^\d]/g,""),10)||0;save();closeSheet();render();toast("予算を保存しました");break;
+    case"savePreset":commitPreset();break;
+    case"newPreset":openPresetForm();break;
+    case"delPreset":data.presets.splice(+t.dataset.i,1);save();render();openSettings();break;
+    case"saveKey":data.apiKey=$("apiKey").value.trim();data.model=$("model").value;save();toast(data.apiKey?"保存しました。カメラボタンから使えます":"APIキーを消しました");break;
+    case"export":exportJSON();break;
+    case"import":$("importFile").click();break;
+    case"csv":exportCSV();break;
+    case"reset":confirmReset=true;openSettings();break;
+    case"resetNo":confirmReset=false;openSettings();break;
+    case"resetYes":data.entries=[];save();confirmReset=false;closeSheet();render();toast("すべての記録を消しました");break;
+    case"retakePhoto":closeSheet();$("photo").click();break;
+    case"manual":openEntry(null);break;
+  }
+});
+function redrawEntry(){const shot=sheet.querySelector(".shot");const note=shot?shot.nextElementSibling:null;drawEntry(shot?shot.outerHTML+(note?note.outerHTML:""):"")}
+sheet.addEventListener("input",e=>{if(["amt","bud","pAmt"].includes(e.target.id)){const v=e.target.value.replace(/[^\d]/g,"");if(v!==e.target.value)e.target.value=v}});
+sheet.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.tagName==="INPUT"&&!e.isComposing){e.preventDefault();const b=sheet.querySelector(".primary");b&&b.click()}});
+
+/* ================= その他 ================= */
+$("fab").onclick=()=>openEntry(null);
+$("editBudget").onclick=openBudget;
+$("settingsBtn").onclick=()=>{confirmReset=false;openSettings()};
+$("prev").onclick=()=>{ym=shiftYm(ym,-1);render()};
+$("next").onclick=()=>{ym=shiftYm(ym,1);render()};
+$("list").addEventListener("click",e=>{const r=e.target.closest(".row");if(!r)return;const en=data.entries.find(x=>x.id===r.dataset.id);if(en)openEntry(en)});
+
+let tt;
+function toast(msg,actLabel,act){
+  $("toastMsg").textContent=msg;const b=$("toastAct");
+  if(actLabel){b.hidden=false;b.textContent=actLabel;b.onclick=()=>{$("toast").hidden=true;act()}}else b.hidden=true;
+  $("toast").hidden=false;clearTimeout(tt);tt=setTimeout(()=>$("toast").hidden=true,actLabel?4500:2400);
+}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){render()}});
+render();
+</script>
+</body>
+</html>
