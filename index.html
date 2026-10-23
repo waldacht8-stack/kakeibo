@@ -6,30 +6,23 @@
 <title>ポケット家計簿</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="家計簿">
-<meta name="theme-color" content="#eef2e6" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#121711" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#ece4d8">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
 <style>
-/* Layout: one fixed screen, no page scroll. Top bar (settings / month / forest), swipeable month page (tree + today's allowance card + two summary tiles), preset row, quick-entry dock. Details (analysis, ledger, entry, settings, forest) open as bottom sheets. */
+/* Layout: one fixed screen, no page scroll. Top bar (settings / month / log), swipeable month page (aquarium + today's allowance card + two summary tiles), preset row, quick-entry dock. Details (analysis, ledger, entry, settings, log) open as bottom sheets. */
 :root{
-  --paper:#eef2e6; --sheet:#ffffff; --ink:#1f2a1c; --muted:#5a6655; --line:#dde4d3;
-  --ai:#2f5a2a; --ai-soft:#e3ecd9; --on-ai:#ffffff;
-  --out:#b3462f; --in:#2f6db0; --warn:#b07a10;
-  --leaf1:#5f9a54; --leaf2:#79b06a; --leaf3:#4e8a46; --trunk:#6b4f35; --pot:#c9774b; --pot2:#b3653d; --ground:#dfe6d3;
-  --autumn1:#e39a3b; --autumn2:#d4643a; --fruit:#e0533d; --bloom:#f4a9b8; --gold:#f2c14e;
+  --paper:#ece4d8; --sheet:#fffdf9; --card:rgba(255,253,249,.8); --dock:rgba(240,233,222,.8); --ink:#123238; --muted:#4c666a; --line:#e0d5c4;
+  --ai:#0f6f80; --ai-soft:#dcecee; --on-ai:#ffffff;
+  --out:#b23a0c; --in:#2f6db0; --warn:#a06a10;
   --ease:cubic-bezier(.2,.8,.2,1); --sp:cubic-bezier(.32,.72,0,1); --spring:cubic-bezier(.34,1.45,.64,1);
   --gl:max(16px,env(safe-area-inset-left,0px)); --gr:max(16px,env(safe-area-inset-right,0px));
   --font:"Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
   color-scheme:light;
 }
-@media (prefers-color-scheme: dark){:root{
-  --paper:#121711; --sheet:#1b221a; --ink:#e7eee2; --muted:#9aa894; --line:#2c3629;
-  --ai:#9fd18f; --ai-soft:#24321f; --on-ai:#10200c; --out:#e3846d; --in:#86b6ea; --warn:#e5b247;
-  --ground:#263022; color-scheme:dark}}
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%;touch-action:manipulation}
@@ -50,7 +43,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   transform-origin:50% 0;transition:transform .5s var(--sp),border-radius .5s var(--sp)}
 body.sheet-open .app{transform:translateY(calc(env(safe-area-inset-top,0px) + 10px)) scale(.92);border-radius:16px}
 .top-bar{flex:none;display:flex;align-items:center;justify-content:space-between;width:100%;max-width:calc(520px + var(--gl) + var(--gr));margin:0 auto;
-  padding:calc(env(safe-area-inset-top,0px) + 6px) var(--gr) 2px var(--gl)}
+  padding:calc(env(safe-area-inset-top,0px) + 2px) var(--gr) 0 var(--gl)}
 .iconbtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--sheet);display:grid;place-items:center;font-size:18px;line-height:1;flex:none}
 .hbtn{width:42px;height:42px;border-radius:50%;border:0;background:var(--sheet);display:grid;place-items:center;font-size:20px;line-height:1;flex:none}
 .hbtn svg{width:20px;height:20px}
@@ -67,10 +60,6 @@ body.sheet-open .app{transform:translateY(calc(env(safe-area-inset-top,0px) + 10
 .chip2{font-size:13px;background:var(--sheet);padding:6px 12px;border-radius:999px;white-space:nowrap}
 .tree{flex:1 1 0;min-height:80px;position:relative}
 .tree>svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.sway{transform-origin:100px 205px;animation:sway 6s ease-in-out infinite}
-@keyframes sway{50%{transform:rotate(1.4deg)}}
-.tree.pop .sway{animation:pop .8s var(--spring),sway 6s ease-in-out .8s infinite}
-@keyframes pop{0%{transform:scale(.94)}100%{transform:none}}
 .gcard{background:var(--sheet);border-radius:22px;padding:14px 16px;display:grid;gap:7px}
 .gcard .l{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px}
 .gcard .l b{font-size:17px}
@@ -82,115 +71,24 @@ body.sheet-open .app{transform:translateY(calc(env(safe-area-inset-top,0px) + 10
 .tile b{font-size:19px;font-weight:700;line-height:1.3}
 .tile .s{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tile .chev{position:absolute;right:13px;top:9px;color:var(--muted);font-style:normal;font-size:17px}
-.forest{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.ftree{border:0;background:var(--paper);border-radius:20px;padding:10px;display:grid;justify-items:center;gap:0}
-.ftree svg{width:110px;height:130px}
-.ftree b{font-size:14px} .ftree span{font-size:12px;color:var(--muted)}
-.ftree.cur{box-shadow:inset 0 0 0 2px var(--ai)}
 .fstats{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;background:var(--paper);border-radius:18px;padding:12px}
 .fstats b{display:block;font-size:22px} .fstats span{font-size:11px;color:var(--muted)}
 .hrow{display:grid;grid-template-columns:4.5em 1fr auto;gap:12px;align-items:center;border:0;border-bottom:1px solid var(--line);background:none;padding:12px 2px;text-align:left;width:100%;font-size:14px}
 .hrow .track{margin:0}
 .hrow.cur b{color:var(--ai)}
-.themes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.thm{border:1px solid var(--line);background:var(--paper);border-radius:14px;padding:10px 6px 8px;display:grid;justify-items:center;gap:6px;font-size:12.5px}
-.thm i{width:34px;height:34px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
-.thm[aria-pressed="true"]{border-color:var(--ai);box-shadow:inset 0 0 0 1.5px var(--ai);font-weight:700}
 
 /* ===== テーマ（保つ家計簿）：背景レイヤー＋主役の絵 ===== */
 .bg{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 .bg>*{position:absolute}
 .top-bar,.stage,.presets{position:relative;z-index:1}
-html[data-theme]:not([data-theme="tree"]) .dock{background:var(--dock);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-top-color:transparent}
+.dock{background:var(--dock);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-top-color:transparent}
 .pace{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:5 5;opacity:.85}
 .pace-t{fill:var(--muted);font-size:11px;font-family:var(--font)}
-html[data-theme="candle"]{--paper:#100c12;--sheet:#211a25;--card:rgba(42,32,46,.7);--dock:rgba(16,12,18,.72);--ink:#f4eee6;--muted:#b9adc4;--line:#3a3042;
-  --ai:#ffb35c;--ai-soft:#3b2c26;--on-ai:#17131c;--out:#ff8a6b;--in:#8fb8ff;--warn:#f2c14e;color-scheme:dark}
-html[data-theme="hp"]{--paper:#0b0f22;--sheet:#161c3a;--card:rgba(11,15,34,.82);--dock:rgba(11,15,34,.8);--ink:#f2f4ff;--muted:#aab3e6;--line:#2c3466;
-  --ai:#ffd84a;--ai-soft:#262c55;--on-ai:#10142a;--out:#ff6b6b;--in:#6fd2ff;--warn:#ffd84a;color-scheme:dark}
-html[data-theme="balloon"]{--paper:#e6f2fb;--sheet:#ffffff;--card:rgba(255,255,255,.8);--dock:rgba(240,247,252,.78);--ink:#15304d;--muted:#46637f;--line:#d3e3f0;
-  --ai:#1f4f80;--ai-soft:#e1edf7;--on-ai:#ffffff;--out:#c2410c;--in:#2f6db0;--warn:#b07a10;color-scheme:light}
-html[data-theme="aquarium"]{--paper:#ece4d8;--sheet:#fffdf9;--card:rgba(255,253,249,.8);--dock:rgba(240,233,222,.8);--ink:#123238;--muted:#4c666a;--line:#e0d5c4;
-  --ai:#0f6f80;--ai-soft:#dcecee;--on-ai:#ffffff;--out:#b23a0c;--in:#2f6db0;--warn:#a06a10;color-scheme:light}
-html[data-theme="town"]{--paper:#070a1f;--sheet:#171d3d;--card:rgba(29,36,67,.7);--dock:rgba(7,10,31,.75);--ink:#f1f0f8;--muted:#aab0cc;--line:#2a3156;
-  --ai:#ffd25e;--ai-soft:#262c50;--on-ai:#141a33;--out:#ff8a7a;--in:#8fb8ff;--warn:#ffd25e;color-scheme:dark}
-.hbtn,.chip2,.gcard,.tile,.preset:not(.add){background:var(--card,var(--sheet))}
-
-/* ろうそく */
-.cd-wall{inset:0;background:radial-gradient(ellipse 130% 70% at 50% 34%,#3d2b22 0%,#241a1d 36%,#130e15 66%,#08060a 100%)}
-.cd-glow{left:50%;top:34%;width:720px;height:720px;margin:-360px 0 0 -360px;border-radius:50%;background:radial-gradient(circle,rgba(255,172,82,.24),rgba(255,140,60,.08) 34%,rgba(255,140,60,0) 62%);animation:cdWall 2.3s ease-in-out infinite}
-.noise{inset:0;width:100%;height:100%}
-.vign{inset:0;background:radial-gradient(ellipse 90% 70% at 50% 35%,rgba(0,0,0,0) 45%,rgba(0,0,0,.6) 100%)}
-.mote{width:3px;height:3px;border-radius:50%;background:#ffd9a0;animation:cdMote 8s linear infinite}
-@keyframes cdWall{0%,100%{opacity:.86;transform:scale(1)}18%{opacity:1;transform:scale(1.03) translateX(3px)}41%{opacity:.76;transform:scale(.98) translateX(-4px)}63%{opacity:.95;transform:scale(1.01)}82%{opacity:.82;transform:scale(.99) translateX(2px)}}
-@keyframes cdMote{0%{transform:translate(0,0);opacity:0}25%{opacity:.7}100%{transform:translate(24px,-180px);opacity:0}}
-.cd-flame{transform-origin:150px 72px;animation:cdFlick 1.6s ease-in-out infinite}
-.cd-halo{transform-origin:150px 40px;animation:cdHalo 2.3s ease-in-out infinite}
-.cd-smoke{animation:cdSmoke 3s ease-out infinite}
-@keyframes cdFlick{0%,100%{transform:scale(1,1) rotate(-1deg)}25%{transform:scale(.94,1.06) rotate(2deg)}50%{transform:scale(1.04,.96) rotate(-2deg)}75%{transform:scale(.97,1.04) rotate(1deg)}}
-@keyframes cdHalo{0%,100%{opacity:.85}50%{opacity:1}}
-@keyframes cdSmoke{0%{opacity:0;transform:translateY(6px)}30%{opacity:1}100%{opacity:0;transform:translateY(-24px)}}
-@keyframes cdPuff{0%{transform:none}25%{transform:scale(.55,.45)}100%{transform:none}}
-.tree.pop .cd-flame{animation:cdPuff .8s var(--sp),cdFlick 1.6s ease-in-out .8s infinite}
-
-/* HPバー */
-.hp-sky{left:0;right:0;top:0;height:58%;background:linear-gradient(#070a1c 0 22%,#0c1230 22% 40%,#121a44 40% 56%,#1a2459 56% 70%,#233070 70% 82%,#2d3c86 82% 100%)}
-.hp-mtn{left:0;width:200%;bottom:42%;animation:hpPar 60s steps(130) infinite}
-.hp-mtn svg{display:block;width:100%;height:100%}
-.hp-mtn.far{height:13%}
-.hp-mtn.near{height:8%;animation-duration:26s}
-.hp-ground{left:0;right:0;top:58%;bottom:0;background:linear-gradient(#5bc46e 0 6px,#2f8a47 6px 28px,rgba(0,0,0,0) 28px),repeating-conic-gradient(#121633 0 25%,#0d1024 0 50%) 0 0/24px 24px}
-.scan{inset:0;background:repeating-linear-gradient(rgba(0,0,0,.22) 0 1px,rgba(0,0,0,0) 1px 3px)}
-.px-star{width:2px;height:2px;background:#e8ecff;animation:hpTw 2s steps(2) infinite}
-@keyframes hpPar{to{transform:translateX(-50%)}}
-@keyframes hpTw{0%,100%{opacity:.25}50%{opacity:1}}
-.tree.hp{display:flex;flex-direction:column;gap:8px}
-.hp-card{border:3px solid var(--ink);border-radius:8px;padding:10px 12px;background:rgba(11,15,34,.86)}
-.hp-row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
-.hp-bar{position:relative;height:16px;margin:8px 0 6px;border:2px solid var(--ink);background:#2a1830}
-.hp-bar>div{position:absolute;left:0;top:0;bottom:0}
-.hp-trail{background:#fff}
-.hp-main{background:#4fe08a}
-.hp-main.warn{background:#ffd84a}.hp-main.low{background:#ff6b6b}
-.hp-pace{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--ai)}
-.hp-foe{position:relative;flex:1;min-height:60px}
-.hp-foe svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-.wisp{transform-origin:85px 150px;animation:wpFlick 1.8s ease-in-out infinite}
-.wisp-f{animation:wpFloat 3.2s ease-in-out infinite}
-.wisp-e{animation:wpEmber 2.6s ease-out infinite}
-.hp-foe.calm .wisp-f{opacity:.35}
-@keyframes wpFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-@keyframes wpFlick{0%,100%{transform:scale(1,1) skewX(0)}25%{transform:scale(.97,1.04) skewX(2deg)}50%{transform:scale(1.03,.97) skewX(-2deg)}75%{transform:scale(.98,1.03) skewX(1deg)}}
-@keyframes wpEmber{0%{transform:translateY(0);opacity:0}20%{opacity:1}100%{transform:translateY(-50px);opacity:0}}
-@keyframes hpHit{0%,100%{filter:none;transform:none}15%{filter:brightness(2.4) saturate(.2);transform:translateX(6px)}35%{filter:brightness(1.3);transform:translateX(-4px)}60%{transform:translateX(2px)}}
-@keyframes hpShake{0%,100%{transform:none}20%{transform:translate(-4px,2px)}40%{transform:translate(4px,-2px)}60%{transform:translate(-2px,1px)}}
-.tree.pop .hp-foe svg{animation:hpHit .7s linear}
-.tree.pop .hp-card{animation:hpShake .4s linear}
-
-/* 気球 */
-.bl-sky{inset:0;background:linear-gradient(#4f9ee8 0%,#7dbdf3 26%,#b4dbf8 48%,#e2f1fb 64%,#f4f9fc 74%)}
-.bl-sun{right:-230px;top:-230px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,#fffff0 0 3%,rgba(255,250,220,.75) 6%,rgba(255,244,200,.25) 20%,rgba(255,244,200,0) 48%)}
-.bl-rays{right:-210px;top:-210px;width:560px;height:560px;border-radius:50%;background:repeating-conic-gradient(rgba(255,255,235,.22) 0 3deg,rgba(255,255,235,0) 3deg 15deg);-webkit-mask:radial-gradient(circle,#000 0,rgba(0,0,0,0) 60%);mask:radial-gradient(circle,#000 0,rgba(0,0,0,0) 60%);animation:spin 90s linear infinite}
-.cloud{left:0;width:160px;height:70px;animation:blDrift 100s linear infinite}
-.cloud i{position:absolute;border-radius:50%;background:radial-gradient(ellipse at 45% 28%,var(--c1) 0 42%,var(--c2) 72%,var(--c3) 100%)}
-.bl-mtn{left:0;width:100%;bottom:28%;height:15%}
-.bl-mead{left:0;right:0;top:72%;bottom:0;background:linear-gradient(#b2d79a,#d3eac0 30%,#eef6e6 70%)}
-.bird{left:0;animation:blBird 22s linear infinite}
-.bird svg{display:block;animation:blFlap .6s ease-in-out infinite}
-@keyframes blDrift{0%{transform:translateX(-220px) scale(var(--s,1))}100%{transform:translateX(110vw) scale(var(--s,1))}}
-@keyframes blBird{0%{transform:translate(-30px,0)}100%{transform:translate(110vw,-40px)}}
-@keyframes blFlap{0%,100%{transform:scaleY(1)}50%{transform:scaleY(-.6)}}
-.bl-rul text{fill:var(--muted);font-size:10px;font-family:var(--font)}
-.bl-rul path{stroke:rgba(21,48,77,.1);stroke-width:1}
-.bl-f{animation:blFloat 4s ease-in-out infinite}
-.bl-fire{transform-box:fill-box;transform-origin:bottom;animation:blFire .5s ease-in-out infinite}
-@keyframes blFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-@keyframes blFire{0%,100%{transform:scaleY(.6);opacity:.6}50%{transform:scaleY(1.1);opacity:1}}
-@keyframes blDip{0%{transform:none}30%{transform:translateY(12px)}100%{transform:none}}
-.tree.pop .bl-b{animation:blDip .9s var(--sp)}
+.hbtn,.chip2,.gcard,.tile,.preset:not(.add){background:var(--card)}
 
 /* 古代魚の水槽 */
 .aq-wall{inset:0;background:linear-gradient(100deg,#f6f1e8 0%,#ece4d7 55%,#ddd3c4 100%)}
+.aq-top{left:0;right:0;top:0;height:calc(env(safe-area-inset-top,0px) + 8px);background:linear-gradient(rgba(40,30,20,.32),rgba(40,30,20,0))} /* ステータスバーの白文字を読みやすく */
 .aq-win{left:38%;top:-6%;width:80%;height:52%;transform:skewX(-18deg);display:grid;grid-template-columns:1fr 1fr;gap:10px;filter:blur(7px);animation:aqSun 7s ease-in-out infinite}
 .aq-win i{background:rgba(255,250,232,.95)}
 .aq-leaf{left:42%;top:0;opacity:.16;filter:blur(4px);transform-origin:80% 0;animation:aqLeaf 6s ease-in-out infinite}
@@ -217,29 +115,6 @@ html[data-theme="town"]{--paper:#070a1f;--sheet:#171d3d;--card:rgba(29,36,67,.7)
 @keyframes aqRip{0%{opacity:.9;transform:scale(.3)}100%{opacity:0;transform:scale(2)}}
 .tree.pop .aq-rip{animation:aqRip .9s ease-out}
 
-/* 灯りの街 */
-.tw-sky{inset:0;background:linear-gradient(#03051a 0%,#090f2e 22%,#131b44 38%,#262a58 47%,#5d4262 54%,#1a1630 58%,#0a0918 100%)}
-.tw-milky{left:-20%;top:4%;width:140%;height:16%;transform:rotate(-28deg);background:radial-gradient(ellipse,rgba(170,180,255,.13),rgba(170,180,255,0) 70%);filter:blur(10px)}
-.tw-star{border-radius:50%;background:#e6ebff}
-.tw-star.tw{box-shadow:0 0 4px rgba(230,235,255,.8);animation:twStar 3s ease-in-out infinite}
-.tw-moon{right:44px;top:calc(env(safe-area-inset-top,0px) + 76px);width:34px;height:34px;border-radius:50%;box-shadow:-8px 4px 0 0 #f3e7b5,0 0 60px 30px rgba(243,231,181,.08)}
-.tw-mist{left:0;height:28px;border-radius:50%;background:linear-gradient(rgba(150,160,210,.2),rgba(40,48,90,.32));filter:blur(8px);animation:twMist 80s linear infinite}
-.tw-shoot{right:20px;top:9%;width:70px;height:1.5px;background:linear-gradient(90deg,#fff,rgba(255,255,255,0));animation:twShoot 11s ease-in infinite}
-.tw-plane{left:0;top:13%;animation:twPlane 30s linear infinite}
-.tw-plane i{display:block;width:3px;height:3px;border-radius:50%;background:#ff6b6b;box-shadow:0 0 6px #ff6b6b;animation:twBlink 1.4s linear infinite}
-.tw-glow{left:0;right:0;top:38%;height:18%;background:radial-gradient(ellipse 70% 100% at 50% 100%,rgba(255,150,110,.26),rgba(255,150,110,0) 70%);animation:twGlow 6s ease-in-out infinite}
-@keyframes twStar{0%,100%{opacity:.25}50%{opacity:1}}
-@keyframes twMist{0%{transform:translateX(-260px)}100%{transform:translateX(110vw)}}
-@keyframes twPlane{0%{transform:translate(-20px,0)}100%{transform:translate(110vw,-30px)}}
-@keyframes twBlink{0%,80%,100%{opacity:0}85%,95%{opacity:1}}
-@keyframes twShoot{0%,88%{opacity:0;transform:translate(0,0) rotate(-24deg)}90%{opacity:1}100%{opacity:0;transform:translate(-160px,72px) rotate(-24deg)}}
-@keyframes twGlow{0%,100%{opacity:.85}50%{opacity:1}}
-.tw-w{fill:#2a3150}
-.tw-w.on{fill:#ffd25e}
-.tw-w.fx-on{animation:twOn 1.6s ease-out both}
-.tw-w.fx-off{animation:twOff 1.6s ease-out both}
-@keyframes twOn{0%,30%{fill:#2a3150}40%{fill:#fff1b8}50%{fill:#c9a24a}65%,100%{fill:#ffd25e}}
-@keyframes twOff{0%,30%{fill:#ffd25e}40%{fill:#7d6a3a}50%{fill:#ffd25e}100%{fill:#2a3150}}
 
 /* presets + quick entry dock */
 .presets{flex:none;display:flex;gap:8px;overflow-x:auto;width:100%;max-width:calc(520px + var(--gl) + var(--gr));margin:0 auto;padding:2px var(--gr) 10px var(--gl);scrollbar-width:none;overscroll-behavior-x:contain}
@@ -378,6 +253,7 @@ section h2{font-size:12.5px;font-weight:700;letter-spacing:.1em;color:var(--mute
 <body>
 
 <div class="app" id="app">
+  <div class="bg" id="bg" aria-hidden="true"></div>
   <div class="top-bar">
     <button class="hbtn" id="settingsBtn" aria-label="設定">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
@@ -387,8 +263,8 @@ section h2{font-size:12.5px;font-weight:700;letter-spacing:.1em;color:var(--mute
       <h1 id="mlabel">—</h1>
       <button class="hbtn" id="next" aria-label="次の月">›</button>
     </div>
-    <button class="hbtn" id="forestBtn" aria-label="わたしの森">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l5 7h-3l4 6H6l4-6H7z"/><line x1="12" y1="16" x2="12" y2="21"/></svg>
+    <button class="hbtn" id="logBtn" aria-label="水槽日誌">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h6M9 14h6M9 18h3"/></svg>
     </button>
   </div>
 
@@ -431,7 +307,7 @@ const DEFAULT_PRESETS=[
   {name:"電車",amt:220,cat:"交通",type:"out"},
   {name:"カフェ",amt:450,cat:"食費",type:"out"}
 ];
-let data={entries:[],budget:0,presets:DEFAULT_PRESETS.slice(),apiKey:"",model:"claude-haiku-5-5",noSpend:{},budgets:{},treeSeen:{},theme:"candle"};
+let data={entries:[],budget:0,presets:DEFAULT_PRESETS.slice(),apiKey:"",model:"claude-haiku-5-5",noSpend:{},budgets:{}};
 function load(){try{const o=JSON.parse(localStorage.getItem(KEY)||"null");if(o)data=Object.assign(data,o)}catch(e){}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){toast("保存できませんでした。ストレージの空きを確認してください")}}
 load();
@@ -515,7 +391,7 @@ function parseInput(text){
 function addEntries(list,label){
   const recs=list.map(p=>({id:newId(),type:p.type,amt:p.amt,cat:p.cat,date:p.date,memo:p.memo||"",ts:Date.now()}));
   data.entries.push(...recs);save();
-  const last=recs[recs.length-1];ym=ymOf(last.date);render();popTree();
+  const last=recs[recs.length-1];ym=ymOf(last.date);render();splash();
   toast(label||(recs.length>1?recs.length+"件を記録しました":(last.type==="in"?"収入 ":"")+(last.memo||last.cat)+" "+yen(last.amt)+" を記録"),"取り消す",()=>{
     const ids=new Set(recs.map(r=>r.id));data.entries=data.entries.filter(e=>!ids.has(e.id));save();render();toast("取り消しました");
   });
@@ -532,22 +408,18 @@ function renderPresets(){
 const stage=$("stage");
 let curPage=$("page");
 function render(){
-  const cm=ymOf(today());applyTheme();
+  const cm=ymOf(today());
   if(data.budget&&!(cm in data.budgets)){data.budgets[cm]=data.budget;save()}
   paintPage(curPage,ym);
   renderChrome();
 }
-function renderChrome(){setLabel(0);renderPresets();treeEffects()}
+function renderChrome(){setLabel(0);renderPresets()}
 function setLabel(k){
   const el=$("mlabel"),[y,m]=ym.split("-");el.textContent=y+"年"+Number(m)+"月";
   if(k&&!reduceMotion())el.animate([{opacity:0,transform:"translateX("+(k*16)+"px)"},{opacity:1,transform:"none"}],{duration:420,easing:SP});
 }
 
-/* ================= 育つ木 ================= */
-// 毎月1日に種から始まり、予算内で終えた日の数で育つ。超過した日の分だけ葉が紅葉する
-const STAGES=[[0,"種"],[1,"芽"],[3,"双葉"],[6,"苗"],[10,"若木"],[15,"木"],[20,"花が咲く"],[25,"実る"]];
-const stageOf=ok=>{let s=0;STAGES.forEach(([n],i)=>{if(ok>=n)s=i});return s};
-function budgetFor(m){ // その月の予算。未設定の月は直前に設定した月から引き継ぐ（設定前の月には木がない）
+function budgetFor(m){ // その月の予算。未設定の月は直前に設定した月から引き継ぐ
   if(m in data.budgets)return data.budgets[m];
   const prev=Object.keys(data.budgets).filter(k=>k<m).sort().pop();
   return prev?data.budgets[prev]:m===ymOf(today())?data.budget||0:0;
@@ -566,48 +438,6 @@ function monthGrowth(m){
   }
   return{B,ok,over,today:td,cur:m===ymOf(now)};
 }
-function treeSVG(stage,over,ok){
-  const leaves=[],L=s=>leaves.push(s),T=w=>' style="stroke:var(--trunk)" stroke-width="'+w+'" fill="none" stroke-linecap="round"';
-  let body="";
-  if(stage===0)body='<ellipse cx="100" cy="203" rx="9" ry="6" style="fill:var(--trunk)"/>';
-  else if(stage===1){body='<path d="M100 204C100 196 101 190 102 184" style="stroke:var(--leaf1)" stroke-width="4" fill="none" stroke-linecap="round"/>';L('<ellipse cx="108" cy="184" rx="8" ry="4" transform="rotate(-25 108 184)"/>')}
-  else if(stage===2){body='<path d="M100 204V168" style="stroke:var(--leaf1)" stroke-width="5" stroke-linecap="round"/>';L('<ellipse cx="86" cy="164" rx="15" ry="8" transform="rotate(20 86 164)"/>');L('<ellipse cx="114" cy="164" rx="15" ry="8" transform="rotate(-20 114 164)"/>')}
-  else if(stage===3){body='<path d="M100 204C98 180 103 160 100 128" style="stroke:var(--leaf1)" stroke-width="5" fill="none" stroke-linecap="round"/>';
-    L('<ellipse cx="84" cy="170" rx="16" ry="8" transform="rotate(25 84 170)"/>');L('<ellipse cx="117" cy="156" rx="16" ry="8" transform="rotate(-25 117 156)"/>');
-    L('<ellipse cx="86" cy="140" rx="14" ry="7" transform="rotate(20 86 140)"/>');L('<ellipse cx="112" cy="126" rx="13" ry="7" transform="rotate(-30 112 126)"/>')}
-  else if(stage===4){body='<path d="M100 204C98 170 103 140 100 110"'+T(7)+'/>';L('<circle cx="100" cy="96" r="40"/>');L('<circle cx="76" cy="112" r="22"/>')}
-  else{
-    const k=stage-5,r=[[48,30],[52,32],[56,34]][k];
-    body='<path d="M100 204C98 160 104 130 100 90"'+T(stage===7?10:9)+'/><path d="M101 150C115 140 128 134 140 120"'+T(5)+'/>';
-    L('<circle cx="100" cy="'+[78,74,70][k]+'" r="'+r[0]+'"/>');L('<circle cx="'+[62,58,54][k]+'" cy="100" r="'+r[1]+'"/>');
-    L('<circle cx="'+[142,144,148][k]+'" cy="'+[110,104,102][k]+'" r="'+r[1]+'"/>');L('<circle cx="122" cy="'+[58,56,52][k]+'" r="20"/>');
-  }
-  const tot=ok+over,nAut=over?Math.min(leaves.length,Math.max(1,Math.round(leaves.length*over/tot*1.6))):0;
-  const greens=["--leaf1","--leaf2","--leaf3"],reds=["--autumn1","--autumn2"];
-  const lv=leaves.map((s,i)=>s.replace(/^<(\w+)/,'<$1 style="fill:var('+(i>=leaves.length-nAut?reds[i%2]:greens[i%3])+')"')).join("");
-  let deco="";
-  if(stage===6)deco=[[80,56],[124,62],[56,92],[150,96],[104,96]].map(([x,y],i)=>'<circle cx="'+x+'" cy="'+y+'" r="'+(i%2?6:7)+'" style="fill:'+(i%2?"#fff":"var(--bloom)")+'"/>').join("");
-  if(stage===7)deco=[[78,58],[126,54],[104,92],[52,98],[152,104]].map(([x,y])=>'<circle cx="'+x+'" cy="'+y+'" r="8" style="fill:var(--fruit)"/>').join("")+'<circle cx="140" cy="76" r="7" style="fill:var(--gold)"/>';
-  const fallen=over&&stage>=4?'<ellipse cx="150" cy="214" rx="6" ry="3" style="fill:var(--autumn2)" transform="rotate(20 150 214)"/>'+(over>2?'<ellipse cx="44" cy="236" rx="6" ry="3" style="fill:var(--autumn1)" transform="rotate(-15 44 236)"/>':''):'';
-  return '<svg viewBox="0 0 200 260" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><ellipse cx="100" cy="252" rx="70" ry="7" style="fill:var(--ground)"/>'+fallen+
-    '<g class="sway">'+body+lv+deco+'</g><path d="M60 210H140L132 250H68Z" style="fill:var(--pot)"/><rect x="54" y="202" width="92" height="14" rx="5" style="fill:var(--pot2)"/></svg>';
-}
-/* ================= 保つテーマ（ろうそく・HPバー・気球・水槽・灯りの街） ================= */
-// どれも「残り予算」を主役にする。点線はペース（月末に0になる配分で今日の終わりに残っているはずの額）
-const THEMES={
-  candle:{name:"ろうそく",log:"ろうそく棚",sw:"radial-gradient(circle at 50% 38%,#fff3c4,#ffad4a 30%,#3a2620 62%,#140e14)",
-    keep:"このペースなら、炎は月末まで灯り続けます。",over:"今日はろうが多く溶けた日。明日の目安で立て直せます。",start:"予算を決めると、ろうそくに火が灯ります"},
-  hp:{name:"HPバー",log:"冒険の記録",sw:"linear-gradient(#0b0f22 0 30%,#4fe08a 30% 62%,#2a1830 62% 70%,#0b0f22 70%)",
-    keep:"ガード成功。HPはペース以上を保っています。",over:"今日はダメージを受けた日。明日の目安でガードしよう。",start:"予算を決めると、冒険が始まります"},
-  balloon:{name:"気球",log:"飛行記録",sw:"radial-gradient(circle at 50% 40%,#d2462e 0 26%,rgba(0,0,0,0) 27%),linear-gradient(#4f9ee8,#e2f1fb)",
-    keep:"高度はペースより上。このまま月末まで飛べます。",over:"今日は高度が下がった日。明日の目安で持ち直せます。",start:"予算を決めると、気球が飛び立ちます"},
-  aquarium:{name:"古代魚の水槽",log:"水槽日誌",sw:"linear-gradient(#ece4d8 0 38%,#8fd0d6 38%,#2c7c88)",
-    keep:"水位はペースより上。ポリーはのびのび泳いでいます。",over:"今日は水が多く減った日。明日の目安で取り戻せます。",start:"予算を決めると、ポリーの水槽に水が入ります"},
-  town:{name:"灯りの街",log:"街のアルバム",sw:"radial-gradient(circle at 30% 70%,#ffd25e 0 9%,rgba(0,0,0,0) 10%),radial-gradient(circle at 66% 58%,#ffd25e 0 9%,rgba(0,0,0,0) 10%),linear-gradient(#090f2e,#262a58)",
-    keep:"灯りはペースより多く残っています。",over:"今日はいくつか灯りが消えた日。明日の目安で守れます。",start:"予算を決めると、街に灯りがともります"},
-  tree:{name:"育つ木",log:"わたしの森",sw:"radial-gradient(circle at 50% 40%,#79b06a 0 34%,#eef2e6 35%)"}
-};
-const theme=()=>THEMES[data.theme]?data.theme:"tree";
 const rng=s=>()=>(s=s*16807%2147483647)/2147483647;
 const r1=n=>Math.round(n*10)/10;
 function keepOf(m){
@@ -617,60 +447,9 @@ function keepOf(m){
   return{B,r,p:Math.max(0,Math.min(1,r/B)),pp:pace/B,ahead:r-pace,cur};
 }
 const man=v=>{const x=v/10000;return(x<10?r1(x):Math.round(x))+"万"};
-const HERO={
-  candle(k){
-    const top=214,yT=r1(top-Math.max(3,160*k.p)),yP=r1(top-160*k.pp),lit=k.r>0,col=k.ahead>=0?"var(--ai)":"var(--out)";
-    let s='<svg viewBox="0 0 300 240" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><defs>'+
-      '<linearGradient id="cdWax" x1="0" x2="1"><stop offset="0" stop-color="#b39878"/><stop offset=".45" stop-color="#fff6e6"/><stop offset="1" stop-color="#9c8062"/></linearGradient>'+
-      '<linearGradient id="cdBr" x1="0" x2="1"><stop offset="0" stop-color="#6b4a22"/><stop offset=".4" stop-color="#e7c37a"/><stop offset=".7" stop-color="#b48a45"/><stop offset="1" stop-color="#5a3d1c"/></linearGradient>'+
-      '<radialGradient id="cdFl" cx=".5" cy=".72" r=".62"><stop offset="0" stop-color="#fff"/><stop offset=".22" stop-color="#fff4cc"/><stop offset=".5" stop-color="#ffcf63"/><stop offset=".8" stop-color="#ff8d2e" stop-opacity=".85"/><stop offset="1" stop-color="#ff5a14" stop-opacity="0"/></radialGradient>'+
-      '<radialGradient id="cdGl"><stop offset="0" stop-color="#ffb35c" stop-opacity=".45"/><stop offset="1" stop-color="#ffb35c" stop-opacity="0"/></radialGradient>'+
-      '<filter id="cdBl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.1"/></filter><filter id="cdHa" x="-150%" y="-100%" width="400%" height="300%"><feGaussianBlur stdDeviation="7"/></filter></defs>'+
-      '<ellipse cx="150" cy="226" rx="74" ry="11" fill="#000" opacity=".45"/><ellipse cx="150" cy="219" rx="70" ry="12" fill="url(#cdBr)"/><ellipse cx="150" cy="216" rx="58" ry="8" fill="#3a2812" opacity=".55"/>';
-    if(lit)s+='<circle class="cd-halo" cx="150" cy="'+(yT-30)+'" r="90" fill="url(#cdGl)" style="transform-origin:150px '+(yT-30)+'px"/>';
-    s+='<path d="M124 '+(yT+4)+'Q124 '+yT+' 150 '+yT+'Q176 '+yT+' 176 '+(yT+4)+'V'+(top+1)+'Q150 '+(top+7)+' 124 '+(top+1)+'Z" fill="url(#cdWax)"/>'+
-      '<ellipse cx="150" cy="'+(yT+3)+'" rx="25" ry="4" fill="'+(lit?"#ffe2a6":"#e8d9bd")+'"/>';
-    if(top-yT>34)s+='<path d="M126 '+(yT+4)+'C126 '+(yT+14)+' 125 '+(yT+22)+' 128 '+(yT+26)+'C131 '+(yT+22)+' 130 '+(yT+12)+' 131 '+(yT+5)+'Z M166 '+(yT+5)+'C167 '+(yT+10)+' 166 '+(yT+16)+' 169 '+(yT+17)+'C172 '+(yT+14)+' 171 '+(yT+9)+' 171 '+(yT+5)+'Z" fill="#fff3dc" opacity=".9"/>';
-    s+='<path d="M150 '+(yT+2)+'Q150 '+(yT-4)+' 152 '+(yT-9)+'" stroke="#1c120e" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
-    if(lit)s+='<g class="cd-flame" style="transform-origin:150px '+(yT-8)+'px"><g transform="translate(138 '+(yT-54)+') scale(.6)"><ellipse cx="20" cy="50" rx="20" ry="32" fill="#ffae4a" opacity=".5" filter="url(#cdHa)"/>'+
-      '<path d="M20 2C23 18 33 34 33 52C33 66 27 76 20 76C13 76 7 66 7 52C7 34 17 18 20 2Z" fill="url(#cdFl)" filter="url(#cdBl)"/><ellipse cx="20" cy="74" rx="6" ry="3.4" fill="#5a86ff" opacity=".6" filter="url(#cdBl)"/></g></g>';
-    else s+='<path class="cd-smoke" d="M152 '+(yT-10)+'q-6 -10 0 -20t0 -20" stroke="#8a8090" stroke-width="2" fill="none" opacity=".6"/>';
-    if(k.cur){
-      s+='<line class="pace" x1="100" x2="200" y1="'+yP+'" y2="'+yP+'"/><text class="pace-t" x="204" y="'+(yP+4)+'">ペース</text>';
-      if(Math.abs(yP-yT)>6)s+='<path d="M112 '+yT+'H108V'+yP+'H112" stroke="'+col+'" stroke-width="1.5" fill="none"/><text x="104" y="'+r1((yT+yP)/2+4)+'" text-anchor="end" style="fill:'+col+';font-size:12px;font-weight:700">'+(k.ahead>=0?"+":"")+yen(k.ahead)+'</text>';
-    }
-    return s+'</svg>';
-  },
-  hp(k){
-    const hp=r1(k.p*100),cls=k.p<.2?" low":k.p<.4?" warn":"",px=(x,y,w,h,c)=>'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+c+'"/>';
-    return '<div class="hp-card"><div class="hp-row"><b style="color:var(--ink);font-size:15px;letter-spacing:.1em">HP</b><span class="num">'+yen(Math.max(0,k.r))+' / '+yen(k.B)+'</span></div>'+
-      '<div class="hp-bar"><div class="hp-main'+cls+'" data-k="hp" data-w="'+hp+'" style="width:'+hp+'%"></div>'+(k.cur?'<i class="hp-pace" style="left:'+r1(k.pp*100)+'%"></i>':'')+'</div>'+
-      '<div class="hp-row"><span>'+(k.cur?"ペース "+yen(k.pp*k.B):"最終HP")+'</span><b class="num" style="color:'+(k.ahead>=0?"var(--in)":"var(--out)")+'">'+(k.cur?(k.ahead>=0?"+":"")+yen(k.ahead):Math.round(hp)+"%")+'</b></div></div>'+
-      '<div class="hp-foe'+(k.ahead>=0?" calm":"")+'"><svg viewBox="0 0 300 170" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><defs><radialGradient id="wpG" cx=".5" cy=".7" r=".6"><stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#bff3ff"/><stop offset=".7" stop-color="#4fb6ff" stop-opacity=".8"/><stop offset="1" stop-color="#3a5cff" stop-opacity="0"/></radialGradient>'+
-      '<filter id="wpB" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.4"/></filter></defs>'+
-      '<rect x="0" y="160" width="300" height="10" fill="#2f8a47"/><g shape-rendering="crispEdges">'+px(52,108,20,14,"#c9d1e8")+px(56,114,14,3,"#232a4d")+px(50,122,24,20,"#4f6bd8")+px(52,142,8,18,"#2b3466")+px(64,142,8,18,"#2b3466")+
-      px(38,120,12,24,"#ffd84a")+px(41,124,6,16,"#b8860b")+px(78,96,4,32,"#e6ebff")+px(73,126,14,4,"#a8743a")+'</g>'+
-      '<g transform="translate(125 0)"><g class="wisp-f"><g class="wisp"><ellipse cx="85" cy="112" rx="46" ry="44" fill="#4fb6ff" opacity=".22" filter="url(#wpB)"/>'+
-      '<path d="M85 34C96 66 126 82 121 116C118 140 103 150 85 150C67 150 52 140 49 116C45 90 68 80 70 58C78 72 80 56 85 34Z" fill="url(#wpG)" filter="url(#wpB)"/>'+
-      '<ellipse cx="75" cy="114" rx="4" ry="6" fill="#0e1a3a"/><ellipse cx="96" cy="114" rx="4" ry="6" fill="#0e1a3a"/></g></g>'+
-      [[60,120,0],[108,110,.9],[86,96,1.7]].map(([x,y,d])=>'<circle class="wisp-e" cx="'+x+'" cy="'+y+'" r="2" fill="#bff3ff" style="animation-delay:'+d+'s"/>').join("")+'</g></svg></div>';
-  },
-  balloon(k){
-    const g0=226,S=120,yb=r1(g0-S*k.p),yP=r1(g0-S*k.pp),N=10,bx=[];
-    for(let i=0;i<=N;i++)bx.push(r1(46*Math.sin((-90+180*i/N)*Math.PI/180)));
-    let gores="";for(let i=0;i<N;i++){const a=bx[i],b=bx[i+1];
-      gores+='<path d="M0 0Q'+r1(a*1.2)+' 6 '+a+' 36Q'+r1(a*.8)+' 62 '+r1(a*.2)+' 80L'+r1(b*.2)+' 80Q'+r1(b*.8)+' 62 '+b+' 36Q'+r1(b*1.2)+' 6 0 0Z" fill="'+["#c8372a","#f3e6cf","#e0892a","#f3e6cf","#2f5f9e"][i%5]+'"/>'}
-    let s='<svg viewBox="0 0 300 240" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><defs><clipPath id="blEnv"><path d="M0 0C30 0 44 18 42 36C40 54 22 66 9 80L-9 80C-22 66 -40 54 -42 36C-44 18 -30 0 0 0Z"/></clipPath>'+
-      '<radialGradient id="blSh" cx=".32" cy=".28" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#0b1a33" stop-opacity=".5"/></radialGradient></defs><g class="bl-rul">';
-    [0,.25,.5,.75,1].forEach(v=>{const y=r1(g0-S*v);s+='<path d="M34 '+y+'H280"/><text x="4" y="'+(y+3)+'">'+(v?man(k.B*v):"0")+'</text>'});
-    s+='</g><path d="M0 233Q150 216 300 233V240H0Z" fill="#9ccc84"/><ellipse cx="170" cy="230" rx="'+r1(22-12*k.p)+'" ry="3" fill="#2a4a2a" opacity=".22"/>';
-    if(k.cur)s+='<line class="pace" x1="34" x2="280" y1="'+yP+'" y2="'+yP+'"/><text class="pace-t" x="280" y="'+(yP-5)+'" text-anchor="end">ペース '+man(k.pp*k.B)+'</text>';
-    s+='<g transform="translate(170 '+r1(yb-100)+')"><g class="bl-b"><g class="bl-f"><g clip-path="url(#blEnv)">'+gores+'<rect x="-46" y="-2" width="92" height="84" fill="url(#blSh)"/></g>'+
-      '<path d="M-9 80L-7 90M9 80L7 90M-3 80L-3 90M3 80L3 90" stroke="#5a4630" stroke-width=".8"/><path class="bl-fire" d="M0 83C2 86 2 88 0 90C-2 88 -2 86 0 83Z" fill="#ffb34a"/>'+
-      '<path d="M-8 90H8L7 100H-7Z" fill="#8a5a32"/><path d="M-8 90H8V92H-8Z" fill="#5d3b1e"/></g></g></g></svg>';
-    return s;
-  },
-  aquarium(k){
+const MSG={keep:"水位はペースより上。ポリーはのびのび泳いでいます。",over:"今日は水が多く減った日。明日の目安で取り戻せます。",start:"予算を決めると、ポリーの水槽に水が入ります"};
+// 残り予算＝水位。点線はペース（月末に0になる配分で今日の終わりに残っているはずの額）
+function aquaSVG(k){
     const yW=r1(226-182*k.p),yP=r1(226-182*k.pp),mud=k.p<.35,fy=r1(Math.max(yW+18,Math.min(206,(yW+226)/2)));
     const fin=[];for(let x=30;x<=78;x+=8)fin.push('M'+x+' '+(-7+x/40)+'l3 -5 l2 '+(5-x/80)+'Z');
     return '<svg viewBox="0 0 300 240" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><defs><clipPath id="aqC"><circle cx="150" cy="124" r="100"/></clipPath>'+
@@ -693,71 +472,19 @@ const HERO={
       (k.cur?'<line class="pace" x1="40" x2="260" y1="'+yP+'" y2="'+yP+'"/>':'')+'</g>'+
       (k.cur?'<text class="pace-t" x="262" y="'+(yP+4)+'">ペース</text>':'')+
       '<path d="M78 46A100 100 0 0 1 118 26" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none" opacity=".6"/><ellipse cx="150" cy="22" rx="56" ry="6" fill="none" stroke="rgba(90,120,120,.45)" stroke-width="2"/></svg>';
-  }
-};
-const TOWN=[[3,4],[3,7],[4,5],[3,6],[2,3]],TOWN_N=77,TOWN_RANK=(()=>{const R=rng(7),a=[...Array(TOWN_N).keys()];for(let i=a.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a})();
-const townLast={};
-HERO.town=(k,m)=>{
-  const lit=k.none?TOWN_N:Math.max(0,Math.min(TOWN_N,Math.ceil(k.r/k.B*TOWN_N))),prev=townLast[m]==null?lit:townLast[m],pace=Math.round(k.pp*TOWN_N);townLast[m]=lit;
-  let s='<svg viewBox="0 0 300 240" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><defs><linearGradient id="twB" x2="0" y2="1"><stop offset="0" stop-color="#1d2450"/><stop offset="1" stop-color="#0c1030"/></linearGradient></defs>'+
-    (k.none?'':'<text class="pace-t" x="150" y="16" text-anchor="middle">灯り '+lit+' / '+TOWN_N+(k.cur?'　ペース '+pace:'')+'</text>');
-  let x=27,n=0,win="";
-  TOWN.forEach(([c,r],bi)=>{
-    const w=c*13+7,h=r*14+12,y=236-h;
-    s+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="url(#twB)"/>';
-    if(bi===1)s+='<path d="M'+(x+w/2)+' '+y+'v-16" stroke="#3a4170" stroke-width="2"/><circle cx="'+(x+w/2)+'" cy="'+(y-17)+'" r="2" fill="#ff6b6b" class="tw-star tw"/>';
-    if(bi===3)s+='<rect x="'+(x+8)+'" y="'+(y-10)+'" width="14" height="10" rx="2" fill="#1a2048"/>';
-    for(let row=0;row<r;row++)for(let col=0;col<c;col++){
-      const rk=TOWN_RANK[n++],on=rk<lit,fx=rk>=lit&&rk<prev?" fx-off":rk<lit&&rk>=prev?" fx-on":"";
-      win+='<rect class="tw-w'+(on?" on":"")+fx+'" x="'+(x+7+col*13)+'" y="'+(y+8+row*14)+'" width="8" height="9" rx="1"/>';
-    }
-    x+=w+4;
-  });
-  return s+'<g style="filter:drop-shadow(0 0 3px rgba(255,210,94,.55))">'+win+'</g><rect y="236" width="300" height="4" fill="#05060f"/></svg>';
-};
-function bgHTML(t){
-  const R=rng(11),f=()=>R(),pct=(a,b)=>r1(a+(b-a)*f())+"%";
-  if(t==="candle")return '<div class="cd-wall"></div><div class="cd-glow"></div><svg class="noise"><filter id="bgN"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .12 0"/></filter><rect width="100%" height="100%" filter="url(#bgN)" style="mix-blend-mode:overlay"/></svg>'+
-    Array.from({length:10},(_,i)=>'<i class="mote" style="left:'+pct(20,80)+';top:'+pct(30,70)+';animation-delay:-'+r1(f()*8)+'s"></i>').join("")+'<div class="vign"></div>';
-  if(t==="hp"){
-    const ridge=(seed,base,amp)=>{const Q=rng(seed),hs=Array.from({length:20},()=>base+Math.round(Q()*amp));let d="M0 40";hs.concat(hs).forEach((h,i)=>d+="V"+(40-h)+"H"+(i+1)*10);return d+"V40Z"};
-    return '<div class="hp-sky"></div>'+Array.from({length:22},()=>'<i class="px-star" style="left:'+pct(0,100)+';top:'+pct(2,40)+';animation-delay:-'+r1(f()*2)+'s"></i>').join("")+
-      '<div class="hp-mtn far"><svg viewBox="0 0 400 40" preserveAspectRatio="none"><path d="'+ridge(3,8,26)+'" fill="#1b2350"/></svg></div>'+
-      '<div class="hp-mtn near"><svg viewBox="0 0 400 40" preserveAspectRatio="none"><path d="'+ridge(5,4,20)+'" fill="#26306a"/></svg></div><div class="hp-ground"></div><div class="scan"></div>';
-  }
-  if(t==="balloon"){
-    const cloud=(top,s,d)=>'<div class="cloud" style="top:'+top+';--s:'+s+';animation-delay:-'+d+'s;--c1:#fff;--c2:#eef5fb;--c3:#cddcea"><i style="left:0;top:28px;width:74px;height:38px"></i><i style="left:30px;top:6px;width:66px;height:56px"></i><i style="left:76px;top:20px;width:70px;height:44px"></i></div>';
-    return '<div class="bl-sky"></div><div class="bl-sun"></div><div class="bl-rays"></div>'+cloud("9%",1.1,20)+cloud("24%",.7,62)+cloud("40%",.9,84)+cloud("52%",.55,40)+
-      '<svg class="bl-mtn" viewBox="0 0 400 60" preserveAspectRatio="none"><path d="M0 60V34L60 14L120 30L190 6L260 28L330 12L400 30V60Z" fill="#a9c3d8"/><path d="M0 60V44L80 30L150 42L230 26L310 40L400 32V60Z" fill="#8fb39a"/></svg><div class="bl-mead"></div>'+
-      '<div class="bird" style="top:18%"><svg width="18" height="8" viewBox="0 0 18 8"><path d="M1 5Q5 0 9 5Q13 0 17 5" stroke="#3a4a5a" stroke-width="1.4" fill="none"/></svg></div>';
-  }
-  if(t==="aquarium")return '<div class="aq-wall"></div><div class="aq-win" style="grid-template-rows:1fr 1fr"><i></i><i></i><i></i><i></i></div>'+
+}
+function bgHTML(){
+  return '<div class="aq-wall"></div><div class="aq-win" style="grid-template-rows:1fr 1fr"><i></i><i></i><i></i><i></i></div>'+
     '<svg class="aq-leaf" width="220" height="200" viewBox="0 0 220 200"><path d="M170 0C150 40 120 70 60 100M150 30C175 60 190 80 200 110M120 60C100 90 70 120 30 140" stroke="#2d3a20" stroke-width="3" fill="none"/>'+
-      [[60,100,-30],[200,110,40],[30,140,-20],[110,70,-50],[180,70,30],[90,120,-10]].map(([x,y,a])=>'<ellipse cx="'+x+'" cy="'+y+'" rx="22" ry="9" transform="rotate('+a+' '+x+' '+y+')" fill="#2d3a20"/>').join("")+'</svg><div class="aq-floor"></div>';
-  if(t==="town")return '<div class="tw-sky"></div><div class="tw-milky"></div>'+
-    Array.from({length:44},(_,i)=>{const z=r1(1+f()*1.6);return'<i class="tw-star'+(i%4?"":" tw")+'" style="left:'+pct(0,100)+';top:'+pct(1,46)+';width:'+z+'px;height:'+z+'px;opacity:'+r1(.35+f()*.6)+';animation-delay:-'+r1(f()*3)+'s"></i>'}).join("")+
-    '<div class="tw-moon"></div><div class="tw-shoot"></div><div class="tw-plane"><i></i></div><div class="tw-glow"></div>'+
-    '<div class="tw-mist" style="top:50%;width:260px"></div><div class="tw-mist" style="top:56%;width:200px;animation-delay:-40s"></div>';
-  return "";
+      [[60,100,-30],[200,110,40],[30,140,-20],[110,70,-50],[180,70,30],[90,120,-10]].map(([x,y,a])=>'<ellipse cx="'+x+'" cy="'+y+'" rx="22" ry="9" transform="rotate('+a+' '+x+' '+y+')" fill="#2d3a20"/>').join("")+'</svg><div class="aq-floor"></div><div class="aq-top"></div>';
 }
-const FOREST_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l5 7h-3l4 6H6l4-6H7z"/><line x1="12" y1="16" x2="12" y2="21"/></svg>';
-const LOG_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h6M9 14h6M9 18h3"/></svg>';
-let shownTheme=null;
-function applyTheme(){
-  const t=theme();if(t===shownTheme)return;shownTheme=t;
-  document.documentElement.dataset.theme=t;
-  const a=$("app"),old=a.querySelector(".bg");if(old)old.remove();
-  if(t!=="tree"){const bg=document.createElement("div");bg.className="bg";bg.setAttribute("aria-hidden","true");bg.innerHTML=bgHTML(t);a.prepend(bg)}
-  const fb=$("forestBtn");fb.setAttribute("aria-label",THEMES[t].log);fb.innerHTML=t==="tree"?FOREST_ICON:LOG_ICON;
-  const paper=getComputedStyle(document.documentElement).getPropertyValue("--paper").trim();
-  document.querySelectorAll('meta[name="theme-color"]').forEach((x,i)=>x.content=t==="tree"?["#eef2e6","#121711"][i]:paper);
-}
-function keepHTML(m){
-  const cm=ymOf(today()),g=monthGrowth(m),k=keepOf(m),M=Number(m.slice(5)),cur=m===cm,t=theme(),X=THEMES[t];
+// 1か月分のページ（水槽・今日の目安・集計タイル）
+function pageHTML(m){
+  const cm=ymOf(today()),g=monthGrowth(m),k=keepOf(m),M=Number(m.slice(5)),cur=m===cm,X=MSG;
   let h='<div class="tree-head"><div><div class="k">'+(cur?"今月":M+"月")+'の残り</div><div class="v num">'+(k?'<span data-k="rem" data-tw="'+Math.round(k.r)+'">'+yen(k.r)+'</span>':cur?"予算 未設定":m>cm?"これから":"予算のない月")+'</div></div>'+
     (k?'<span class="chip2 num">'+(cur?"ペースより "+(k.ahead>=0?"+":"")+yen(k.ahead):"保てた "+Math.round(k.p*100)+"%")+'</span>':'')+'</div>'+
-    '<div class="tree'+(t==="hp"?" hp":"")+'" role="img" aria-label="'+X.name+'。'+(k?"残り "+yen(k.r)+"、予算 "+yen(k.B):"予算なし")+'">'+
-      HERO[t](k||{B:1,r:1,p:1,pp:0,ahead:0,cur:false,none:true},m)+'</div><div class="gcard">';
+    '<div class="tree" role="img" aria-label="ポリーの水槽。'+(k?"残り "+yen(k.r)+"、予算 "+yen(k.B):"予算なし")+'">'+
+      aquaSVG(k||{B:1,r:1,p:1,pp:0,ahead:0,cur:false})+'</div><div class="gcard">';
   if(cur&&g){
     const d=g.today,left=d.left,pct=d.target>0?Math.min(100,d.spent/d.target*100):(d.spent?100:0);
     h+='<div class="l"><span>今日の目安まで</span>'+(left>=0?'<b class="num">あと <span data-k="left" data-tw="'+Math.round(left)+'">'+yen(left)+'</span></b>':'<b class="num neg"><span data-k="over" data-tw="'+Math.round(-left)+'">'+yen(-left)+'</span> オーバー</b>')+'</div>'+
@@ -769,29 +496,6 @@ function keepHTML(m){
   }else if(cur)h+='<div class="l"><span>'+X.start+'</span></div><button class="gbtn" data-g="budget">予算を設定</button>';
   else if(k)h+='<div class="l"><span>'+M+'月の結果</span><b class="num">'+yen(k.r)+' 保てた</b></div><div class="note">予算 '+yen(k.B)+' のうち '+Math.round(k.p*100)+'% を残せました</div>';
   else h+='<div class="note">'+(m>cm?"この月はまだ始まっていません。":"この月は予算が設定されていませんでした。")+'</div>';
-  return h+'</div>';
-}
-// 1か月分のページ（主役の絵・今日の目安・集計タイル）
-function pageHTML(m){
-  const cm=ymOf(today()),g=monthGrowth(m),M=Number(m.slice(5)),cur=m===cm;
-  if(theme()!=="tree")return keepHTML(m)+tilesHTML(m);
-  const ok=g?g.ok:0,over=g?g.over:0,st=stageOf(ok);
-  let h='<div class="tree-head"><div><div class="k">'+(cur?"今月":M+"月")+'の木</div><div class="v">'+(g?STAGES[st][1]:cur?"まだ植えていません":m>cm?"これから":"予算のない月")+'</div></div>'+
-    (g?'<span class="chip2">予算内 '+ok+'日'+(over?'・超過 '+over+'日':'')+'</span>':'')+'</div>'+
-    '<div class="tree" role="img" aria-label="'+(g?STAGES[st][1]:"種")+'の木。予算内 '+ok+'日、超過 '+over+'日">'+treeSVG(st,over,ok)+'</div><div class="gcard">';
-  if(cur&&g){
-    const t=g.today,left=t.left,pct=t.target>0?Math.min(100,t.spent/t.target*100):(t.spent?100:0);
-    h+='<div class="l"><span>今日の目安まで</span>'+(left>=0?'<b class="num">あと <span data-k="left" data-tw="'+Math.round(left)+'">'+yen(left)+'</span></b>':'<b class="num neg"><span data-k="over" data-tw="'+Math.round(-left)+'">'+yen(-left)+'</span> オーバー</b>')+'</div>'+
-      '<div class="track"><div class="fill'+(left<0?" over":pct>80?" warn":"")+'" data-k="gfill" data-w="'+pct.toFixed(1)+'" style="width:'+pct.toFixed(1)+'%"></div></div>';
-    if(!t.has&&!t.ns)h+='<div class="note">記録のない日は数えません。使わなかった日はボタンで確定できます。</div><button class="gbtn" data-g="nospend">今日は使わなかった</button>';
-    else if(left>=0){
-      const s2=stageOf(ok+1),nx=STAGES[s2+1];
-      h+='<div class="note">このままなら今日で予算内 '+(ok+1)+'日'+(s2>st?'。「'+STAGES[s2][1]+'」に育ちます':nx?'。「'+nx[1]+'」まであと'+(nx[0]-ok-1)+'日':'')+'</div>';
-      if(!t.has)h+='<button class="gbtn" data-g="undoNospend">「使わなかった」を取り消す</button>';
-    }else h+='<div class="note">今日は紅葉の日。明日からまた育ちます。</div>';
-  }else if(cur)h+='<div class="l"><span>予算を決めると、木が育ち始めます</span></div><button class="gbtn" data-g="budget">予算を設定</button>';
-  else if(g)h+='<div class="l"><span>'+M+'月の結果</span><b>'+STAGES[st][1]+'</b></div><div class="note">予算内 '+ok+'日・超過 '+over+'日</div>';
-  else h+='<div class="note">'+(m>cm?"この月はまだ始まっていません。":"この月は予算が設定されていなかったので、木はありません。")+'</div>';
   return h+'</div>'+tilesHTML(m);
 }
 function tilesHTML(m){
@@ -818,20 +522,14 @@ function countUp(el,from,to){
   const step=t=>{const p=Math.min(1,(t-t0)/d),e=1-Math.pow(1-p,3);el.textContent=yen(from+(to-from)*e);if(p<1&&el.isConnected)requestAnimationFrame(step)};
   el.textContent=yen(from);requestAnimationFrame(step);
 }
-function treeEffects(){ // 日付が変わって段階が上がったら知らせる
-  const cm=ymOf(today());if(ym!==cm||theme()!=="tree")return;const g=monthGrowth(cm);if(!g)return;
-  const st=stageOf(g.ok),seen=data.treeSeen[cm];
-  if(seen!=null&&st>seen){toast(Number(cm.slice(5))+"月の木が「"+STAGES[st][1]+"」に育ちました");popTree()}
-  if(seen!==st){data.treeSeen[cm]=st;save()}
-}
 let popT;
-function popTree(){const t=curPage.querySelector(".tree");if(!t)return;t.classList.remove("pop");void t.offsetWidth;t.classList.add("pop");clearTimeout(popT);popT=setTimeout(()=>t.classList.remove("pop"),900)}
+function splash(){const t=curPage.querySelector(".tree");if(!t)return;t.classList.remove("pop");void t.offsetWidth;t.classList.add("pop");clearTimeout(popT);popT=setTimeout(()=>t.classList.remove("pop"),900)}
 stage.addEventListener("click",e=>{
   const b=e.target.closest("[data-g],[data-tile]");if(!b||busy)return;
   if(b.dataset.tile==="stats")openStats();
   else if(b.dataset.tile==="list")openList();
   else if(b.dataset.g==="budget")openBudget();
-  else if(b.dataset.g==="nospend"){data.noSpend[today()]=true;save();render();popTree();toast("今日は「使わなかった日」にしました")}
+  else if(b.dataset.g==="nospend"){data.noSpend[today()]=true;save();render();splash();toast("今日は「使わなかった日」にしました")}
   else if(b.dataset.g==="undoNospend"){delete data.noSpend[today()];save();render()}
 });
 
@@ -927,26 +625,14 @@ function openList(){
   }
   openSheet(head(mName(ym)+"の明細（"+list.length+"件）")+'<div class="stagger" style="gap:4px">'+body+'</div>');
 }
-function openLog(){ // 保つテーマの月ごとの記録
+function openLog(){ // 月ごとに残せた割合
   const cur=ymOf(today());let m=ymOf(data.entries.reduce((a,e)=>e.date<a?e.date:a,today()));const ks=[];
   while(m<=cur){const k=keepOf(m);if(k)ks.push([m,k]);m=shiftYm(m,1)}
   ks.reverse();const done=ks.filter(([x])=>x<cur);
-  openSheet(head(THEMES[theme()].log)+
+  openSheet(head("水槽日誌")+
     '<div class="fstats"><div><b class="num">'+done.length+'</b><span>終えた月</span></div><div><b class="num">'+(done.length?Math.round(Math.max(...done.map(([,k])=>k.p))*100):0)+'%</b><span>最高の残り</span></div><div><b class="num">'+man(done.reduce((s,[,k])=>s+Math.max(0,k.r),0))+'</b><span>保てた合計</span></div></div>'+
-    (ks.length?'<div>'+ks.map(([x,k])=>'<button class="hrow'+(x===ym?" cur":"")+'" data-act="forestGo" data-m="'+x+'"><span>'+mName(x)+'</span><div class="track"><div class="fill'+(k.p<.1?" over":"")+'" style="width:'+r1(k.p*100)+'%"></div></div><b class="num">'+(x===cur?"進行中":Math.round(k.p*100)+"%")+'</b></button>').join("")+'</div>'
+    (ks.length?'<div>'+ks.map(([x,k])=>'<button class="hrow'+(x===ym?" cur":"")+'" data-act="monthGo" data-m="'+x+'"><span>'+mName(x)+'</span><div class="track"><div class="fill'+(k.p<.1?" over":"")+'" style="width:'+r1(k.p*100)+'%"></div></div><b class="num">'+(x===cur?"進行中":Math.round(k.p*100)+"%")+'</b></button>').join("")+'</div>'
       :'<div class="note">予算を設定すると、毎月の残せた割合がここに並びます。</div>'));
-}
-function openForest(){
-  if(theme()!=="tree"){openLog();return}
-  const cur=ymOf(today());let m=ymOf(data.entries.reduce((a,e)=>e.date<a?e.date:a,today()));const months=[];
-  while(m<=cur){months.push(m);m=shiftYm(m,1)}
-  const gs=months.reverse().map(x=>[x,monthGrowth(x)]).filter(([,g])=>g);
-  const done=gs.filter(([x])=>x<cur);
-  openSheet(head("わたしの森")+
-    '<div class="fstats"><div><b class="num">'+gs.length+'</b><span>本の木</span></div><div><b class="num">'+done.filter(([,g])=>g.ok>=25).length+'</b><span>実った月</span></div><div><b class="num">'+Math.max(0,...gs.map(([,g])=>g.ok))+'</b><span>最高の予算内日数</span></div></div>'+
-    (gs.length?'<div class="forest">'+gs.map(([x,g])=>{const st=stageOf(g.ok);return'<button class="ftree'+(x===ym?" cur":"")+'" data-act="forestGo" data-m="'+x+'">'+treeSVG(st,g.over,g.ok)+'<b>'+mName(x)+'</b><span>'+(x===cur?"育成中・":"")+STAGES[st][1]+'・予算内'+g.ok+'日</span></button>'}).join("")+'</div>'
-      :'<div class="note">予算を設定すると、毎月1本ずつ木が増えていきます。</div>')+
-    '<div class="note" style="text-align:center">木をタップすると、その月を開きます</div>');
 }
 
 /* ================= ひとこと入力 UI ================= */
@@ -1095,10 +781,7 @@ function commitPreset(){
 let confirmReset=false;
 function openSettings(){
   openSheet(head("設定")+
-   '<div class="group" style="border:0;padding-top:0"><h4>テーマ</h4><div class="themes">'+
-     ["candle","hp","balloon","aquarium","town","tree"].map(t=>'<button class="thm" data-act="theme" data-theme="'+t+'" aria-pressed="'+(theme()===t)+'"><i style="background:'+THEMES[t].sw+'"></i>'+THEMES[t].name+'</button>').join("")+
-   '</div></div>'+
-   '<div class="group"><h4>定番ボタン</h4><div class="plist">'+
+   '<div class="group" style="border:0;padding-top:0"><h4>定番ボタン</h4><div class="plist">'+
      (data.presets.length?data.presets.map((p,i)=>'<div class="pitem"><span>'+esc(p.name)+'　<span class="num note">'+yen(p.amt)+'・'+esc(p.cat)+'</span></span><button data-act="delPreset" data-i="'+i+'">削除</button></div>').join(""):'<div class="note">まだありません</div>')+
    '</div><button class="ghost" data-act="newPreset">＋ 定番を追加</button></div>'+
    '<div class="group"><h4>レシート読み取り（Claude）</h4>'+
@@ -1210,8 +893,7 @@ sheet.addEventListener("click",e=>{
     case"toPreset":readEntry();openPresetForm({name:draft.memo||draft.cat,amt:parseInt(draft.amt,10)||"",cat:draft.cat,type:draft.type});break;
     case"budget":openBudget();break;
     case"saveBudget":data.budget=parseInt(($("bud").value||"0").replace(/[^\d]/g,""),10)||0;data.budgets[ymOf(today())]=data.budget;save();closeSheet();render();toast("予算を保存しました");break;
-    case"forestGo":closeSheet();goTo(t.dataset.m);break;
-    case"theme":data.theme=t.dataset.theme;save();render();sheet.querySelectorAll(".thm").forEach(b=>b.setAttribute("aria-pressed",b===t));break;
+    case"monthGo":closeSheet();goTo(t.dataset.m);break;
     case"savePreset":commitPreset();break;
     case"newPreset":openPresetForm();break;
     case"delPreset":data.presets.splice(+t.dataset.i,1);save();render();openSettings();break;
@@ -1233,7 +915,8 @@ sheet.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.tagName==="INP
 /* ================= その他 ================= */
 $("fab").onclick=()=>openEntry(null);
 $("settingsBtn").onclick=()=>{confirmReset=false;openSettings()};
-$("forestBtn").onclick=openForest;
+$("logBtn").onclick=openLog;
+$("bg").innerHTML=bgHTML();
 
 let tt;
 function toast(msg,actLabel,act){
