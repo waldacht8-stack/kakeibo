@@ -1,5 +1,5 @@
 // オフライン対応：アプリ本体をキャッシュし、通信できるときは裏で最新版に更新する
-const CACHE = "kakeibo-v2";
+const CACHE = "kakeibo-v3";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./apple-touch-icon.png", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
